@@ -3,6 +3,10 @@
 App web (PWA) para montar e executar treinos de judô. Sem build, sem dependências, sem servidor:
 abre no navegador, salva no próprio aparelho e funciona offline.
 
+**No ar:** https://tatame-beta.vercel.app · **Código:** https://github.com/yago-hkcr/tatame
+
+No celular, abra o link e use "Adicionar à tela de início" — ele instala como app e funciona sem internet.
+
 ## Como abrir
 
 **Opção 1 — direto:** dê duplo clique em `index.html`.
@@ -121,17 +125,24 @@ na primeira chave criada.
 
 ## Publicar
 
-Qualquer host estático serve (sem passo de build):
+O deploy é contínuo: `git push` na branch `master` → Vercel publica em
+https://tatame-beta.vercel.app (projeto `tatame`, estático, sem build).
 
-- **Netlify Drop**: arraste a pasta para https://app.netlify.com/drop
-- **GitHub Pages**: suba os arquivos e ative Pages na branch
-- **Vercel/Cloudflare Pages**: importe o repositório e publique a raiz
+Deploy manual, se precisar:
 
-Ao publicar mudanças, atualize o `?v=` dos arquivos em `index.html` (e em `sw.js`) para furar o cache.
+```bash
+vercel --prod          # publica a pasta atual no projeto tatame
+```
+
+`vercel.json` cuida dos cabeçalhos: `sw.js` e `index.html` sem cache (para a atualização
+do app chegar), manifest com MIME correto e `nosniff`/`no-referrer` no resto.
+
+Ao mexer em CSS/JS, suba o `?v=` em `index.html` **e** em `sw.js` (lista `SHELL` e nome do
+cache) para furar o cache do service worker.
 
 ## Próximos passos possíveis
 
-- Login e sincronização entre aparelhos (Supabase/Firebase)
+- Login e sincronização entre aparelhos (Supabase/Firebase) — hoje a chave vale no aparelho
 - Marcar presença em treino de dojo e compartilhar com o sensei
 - Plano periódico (semana/mês) com metas e notificações
 - Vídeos/gifs das técnicas e modo "espelho" na TV

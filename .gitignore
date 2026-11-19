@@ -1,0 +1,8 @@
+# artefatos de teste
+tests/.out/
+tests/last-report.json
+.node-ide/
+.vercel/
+node_modules/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,579 @@
+/* ==========================================================================
+   TATAME · UNIVERSAL ADAPTIVE LAYOUT ENGINE  (camada 2 — depois de styles.css)
+   --------------------------------------------------------------------------
+   Arquitetura
+     1. Tokens fluidos        — espaçamento, tipografia, containers, raios, taps
+     2. Guardas estruturais   — overflow, mídia, quebra de texto, foco
+     3. Mapa de componentes   — header, nav, hero, cards, grids, forms, sheets,
+                                player, gráfico, gate, tabelas/listas
+     4. Breakpoints           — 360 / 560 / 768 / 900 / 1100 / 1440 / 1700 /
+                                1920 / 2560 / 3200 + altura + orientação
+     5. Container queries     — decisões locais (lista do player, picker)
+     6. Acessibilidade        — alvos de toque, foco visível, contraste
+
+   Regra de ouro: o layout intrínseco (auto-fill / minmax / clamp) resolve
+   primeiro; breakpoints só entram quando a ORGANIZAÇÃO precisa mudar.
+   ========================================================================== */
+
+/* ----------------------------------------------------------------- tokens */
+:root {
+  /* espaçamento — escala fluida (nunca menor que 4px, nunca maior que 52px) */
+  --sp-0: 2px;
+  --sp-1: clamp(4px, 0.35vw + 3px, 6px);
+  --sp-2: clamp(6px, 0.45vw + 4px, 10px);
+  --sp-3: clamp(10px, 0.6vw + 6px, 14px);
+  --sp-4: clamp(13px, 0.8vw + 8px, 18px);
+  --sp-5: clamp(16px, 1.1vw + 10px, 26px);
+  --sp-6: clamp(22px, 1.6vw + 12px, 36px);
+  --sp-7: clamp(28px, 2.4vw + 14px, 52px);
+
+  /* ritmo horizontal e limites */
+  --gutter: clamp(14px, 4.2vw, 34px);
+  --content-max: 820px;
+  --sheet-max: 640px;
+  --tap: 44px;
+
+  /* tipografia fluida */
+  --fs-hero: clamp(2rem, 1.05rem + 3.6vw, 3.4rem);
+  --fs-title: clamp(1.75rem, 1.25rem + 2.4vw, 2.6rem);
+  --fs-h2: clamp(1.02rem, 0.96rem + 0.32vw, 1.18rem);
+  --fs-h3: clamp(0.98rem, 0.94rem + 0.24vw, 1.1rem);
+  --fs-body: clamp(0.87rem, 0.85rem + 0.12vw, 0.95rem);
+  --fs-sm: clamp(0.79rem, 0.77rem + 0.1vw, 0.86rem);
+  --fs-xs: clamp(0.71rem, 0.69rem + 0.08vw, 0.76rem);
+  --fs-2xs: clamp(0.69rem, 0.67rem + 0.06vw, 0.72rem);
+  --fs-label: clamp(0.69rem, 0.67rem + 0.06vw, 0.74rem);
+  --fs-stat: clamp(1.32rem, 1.05rem + 1vw, 1.9rem);
+  --fs-time: clamp(2.7rem, 1.4rem + 6.6vw, 5rem);
+
+  /* raios proporcionais */
+  --r-xl: clamp(22px, 1.4vw + 15px, 28px);
+  --r-lg: clamp(18px, 1vw + 14px, 22px);
+  --r-md: clamp(14px, 0.7vw + 11px, 16px);
+  --r-sm: clamp(10px, 0.5vw + 8px, 12px);
+
+  /* cromo do app */
+  --rail-w: clamp(248px, 17vw, 300px);
+}
+
+/* Breakpoints usados nesta folha (baseados no comportamento real):
+   320–359  compacto      → gutter 14, hero 2rem, grids 1–2 col
+   360–559  convencional  → design base
+   560–767  grande/fold   → quick 3 col, modelos em grade, sheet 560
+   768–899  tablet retrato→ content 720, quick 4, sheet 640
+   900–1099 tablet paisagem/notebook pequeno → quick 5, modelos 3, sheet modal
+   1100–1439 notebook     → trilha lateral, content 940
+   1440–1699 desktop      → content 1040, listas 2 col por container
+   1700–1919 desktop grande → content 1120, rail 300
+   1920+    ultra         → content 1200, tipografia no topo da escala
+   2560+    ultrawide     → content 1320, respiro extra             */
+
+/* -------------------------------------------------- guardas estruturais */
+html {
+  /* evita salto de centralização quando a barra de rolagem aparece */
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+#view,
+.topbar,
+.tabbar,
+.sheet,
+.gate-wrap {
+  min-width: 0;
+}
+
+img,
+video,
+canvas,
+iframe,
+embed,
+object {
+  max-width: 100%;
+  height: auto;
+}
+
+img,
+video {
+  object-fit: cover;
+  object-position: center;
+}
+
+svg {
+  max-width: 100%;
+}
+
+/* texto longo (nome de treino, anotação, foco) nunca estoura o card */
+h1, h2, h3, h4, h5, h6, p, li, small, b, strong, span {
+  overflow-wrap: break-word;
+}
+
+input, select, textarea, button {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------ mapa: tipografia */
+.hero h1 { font-size: var(--fs-hero); }
+.view > .page > .hero h1 { text-wrap: balance; }
+.hero p.hero-sub { font-size: var(--fs-body); max-width: 46ch; }
+.section-head h2 { font-size: var(--fs-h2); }
+.section-head .hint { font-size: var(--fs-2xs); }
+.tc-main h3 { font-size: var(--fs-h3); }
+.tc-desc { font-size: var(--fs-sm); }
+.model strong { font-size: clamp(0.94rem, 0.9rem + 0.3vw, 1.06rem); }
+.model .m-desc { font-size: var(--fs-xs); }
+.empty h3 { font-size: var(--fs-h3); }
+.empty p { font-size: var(--fs-sm); }
+.stat .value { font-size: var(--fs-stat); }
+.stat .label { font-size: var(--fs-label); }
+.stat .foot { font-size: var(--fs-2xs); }
+.stat-hero .sh-value { font-size: clamp(2.1rem, 1.3rem + 2.6vw, 3rem); }
+.stat-hero .sh-sub { font-size: var(--fs-xs); }
+.hist-body h4 { font-size: var(--fs-sm); }
+.hist-body p { font-size: var(--fs-2xs); }
+.pl-name strong { font-size: clamp(0.86rem, 0.82rem + 0.3vw, 1rem); }
+.pl-block-name { font-size: clamp(0.95rem, 0.88rem + 0.45vw, 1.18rem); }
+.pl-time { font-size: var(--fs-time); }
+.pl-state, .pl-upnext { font-size: var(--fs-2xs); }
+.pl-foco { font-size: var(--fs-sm); }
+.tiny { font-size: var(--fs-xs); }
+.small { font-size: var(--fs-sm); }
+.field > label, .flabel, .lbl { font-size: var(--fs-label); }
+.btn { font-size: var(--fs-sm); }
+.btn.sm { font-size: var(--fs-xs); }
+.btn.xs { font-size: var(--fs-2xs); }
+.tag { font-size: var(--fs-2xs); }
+.chip-stat { font-size: var(--fs-2xs); }
+.kicker { font-size: clamp(1.02rem, 0.9rem + 0.6vw, 1.25rem); }
+.sheet-head h2 { font-size: clamp(0.96rem, 0.92rem + 0.25vw, 1.1rem); }
+.gate-wrap h1 { font-size: clamp(1.9rem, 1.1rem + 3vw, 2.9rem); }
+.gate-sub { font-size: var(--fs-body); }
+#chave-txt { font-size: clamp(0.88rem, 0.6rem + 1.1vw, 1.16rem); }
+.bar-day { font-size: clamp(0.5rem, 0.44rem + 0.18vw, 0.6rem); }
+
+/* -------------------------------------------------- mapa: espaçamento */
+.view { padding-left: var(--gutter); padding-right: var(--gutter); }
+.topbar { padding-left: var(--gutter); padding-right: var(--gutter); }
+.section { margin-top: var(--sp-6); }
+.section-head { margin-bottom: var(--sp-3); gap: var(--sp-3); }
+.hero { padding: var(--sp-4) 0 var(--sp-1); }
+.hero p.hero-sub { margin-top: var(--sp-3); }
+.hero-chips { margin-top: var(--sp-4); }
+.quick-grid { gap: var(--sp-2); margin-top: var(--sp-5); }
+.treino-card { padding: var(--sp-4) var(--sp-4) var(--sp-3); margin-bottom: var(--sp-2); }
+.rail { gap: var(--sp-3); }
+.stack { gap: var(--sp-2); }
+.card-grid { gap: var(--sp-2); }
+.sheet-body { padding: var(--sp-4); }
+.sheet-foot { padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-b)); }
+.gate-wrap { padding-left: var(--gutter); padding-right: var(--gutter); }
+
+/* rail de modelos: sangra até a borda usando o MESMO gutter do .view */
+.rail {
+  margin-left: calc(var(--gutter) * -1);
+  margin-right: calc(var(--gutter) * -1);
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+  scroll-padding-left: var(--gutter);
+}
+
+/* cartões de treino: 1 coluna no celular, 2 a partir do tablet.
+   Colunas explícitas (e não auto-fill) para não depender de 2px de sobra:
+   com min(100%, 480px) num container de 968px o auto-fill devolvia 1 coluna. */
+.card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-2);
+  align-items: start;
+}
+@media (min-width: 820px) {
+  .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.card-grid > .treino-card { margin-bottom: 0; }
+
+.hist-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); }
+
+/* ------------------------------------------------ mapa: componentes */
+/* containers com limite único e fluido */
+.view { max-width: var(--content-max); margin-left: auto; margin-right: auto; }
+.sheet { max-width: var(--sheet-max); }
+/* cromo fixo respeitando safe areas e sem cobrir conteúdo */
+.view { padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--sp-6)); }
+
+/* alvos de toque confortáveis sem quebrar a geometria */
+.btn, .tab, .ctrl, .play-btn, .gp, .mood, .status-opt, .dq, .swatch, .perfil-row {
+  touch-action: manipulation;
+}
+@media (pointer: coarse) {
+  .icon-btn { min-width: 40px; min-height: 40px; }
+  .close-btn { width: 38px; height: 38px; }
+  .dq { min-height: 34px; }
+  .swatch { width: 26px; height: 26px; }
+  .mood { min-height: 58px; }
+  .hist-item .icon-btn { min-width: 40px; min-height: 40px; }
+}
+
+/* foco visível para teclado, discreto no toque */
+:where(a, button, [tabindex], summary, select, input, textarea):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+:where(input, textarea, select):focus-visible { outline-offset: 0; }
+
+/* mídia em componentes (técnicas futuras, imagens de treino) */
+.tc-media, .model img, .sheet img {
+  width: 100%;
+  border-radius: var(--r-md);
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* gráfico: altura fluida, barras proporcionais, sem clipping */
+.chart { height: clamp(132px, 14vh + 44px, 220px); }
+
+/* ------------------------------------------------------- 320–359 (xs) */
+@media (max-width: 359px) {
+  :root { --gutter: 12px; --fs-hero: 1.85rem; }
+  .quick-grid { grid-template-columns: minmax(0, 1fr); }
+  .quick { flex-direction: row; align-items: center; min-height: 0; }
+  .quick.free { grid-column: auto; }
+  .blk-body .grid2, .grid2 { grid-template-columns: minmax(0, 1fr); }
+  .blk .dur-inputs { flex-wrap: nowrap; }
+  .blk .dur-inputs input { width: 100%; }
+  .sheet-body { padding: 14px; }
+  .sheet-foot { padding: 10px 14px calc(12px + var(--safe-b)); gap: 8px; }
+  .sheet-foot .btn { padding-left: 10px; padding-right: 10px; }
+  .perfil-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .perfil-stats b { font-size: 0.92rem; }
+  .gate-keyrow { grid-template-columns: minmax(0, 1fr); }
+  .gate-keyrow .btn { height: 44px; }
+  .mood-row { gap: 6px; }
+  .hist-item { gap: 8px; }
+  .blk-foot .btn.xs { padding-left: 7px; padding-right: 7px; }
+  .brand-text span { display: none; } /* assinatura é decorativa: prioriza o nome */
+  .topbar { gap: 8px; }
+  .streak { padding: 6px 9px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .avatar { width: 34px; height: 34px; }
+  .hero p.hero-sub { font-size: 0.86rem; }
+}
+
+/* --------------------------------------------------------- 360–559 (sm) */
+@media (min-width: 360px) and (max-width: 559px) {
+  .blk-body .grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+/* --------------------------------------------------------- 560–767 (md) */
+@media (min-width: 560px) {
+  :root { --content-max: 640px; --sheet-max: 560px; }
+  .quick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .quick { flex-direction: row; align-items: center; min-height: 0; }
+  .quick.free { grid-column: span 2; }
+  .rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); overflow: visible; padding: 4px 0 0; margin: 0; }
+  .model { width: auto; min-height: 168px; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary-stats > div { padding: 14px 10px; }
+  .hero h1 { max-width: 22ch; }
+  .mood-row { max-width: 460px; }
+}
+
+/* --------------------------------------------------------- 768–899 (tab) */
+@media (min-width: 768px) {
+  :root { --content-max: 720px; --sheet-max: 620px; --gutter: clamp(20px, 3.4vw, 32px); }
+  .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .hist-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); }
+  .sheet-layer { align-items: center; }
+  .sheet { border-radius: var(--r-xl); margin-bottom: 20px; border-bottom: 1px solid var(--line-2); max-height: 88dvh; }
+  .sheet-foot { border-radius: 0 0 var(--r-xl) var(--r-xl); }
+  .gate-wrap { max-width: 560px; }
+  .gate-card { padding: var(--sp-5); }
+}
+
+/* --------------------------------------------------------- 900–1099 (lg) */
+@media (min-width: 900px) {
+  :root { --content-max: 880px; --gutter: 30px; }
+  .view { max-width: var(--content-max); margin-left: auto; margin-right: auto; }
+  .quick-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .quick { flex-direction: column; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-4); min-height: 112px; }
+  .quick.free { grid-column: auto; }
+  .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .model { min-height: 172px; }
+  .pl-list { max-width: 880px; margin-left: auto; margin-right: auto; }
+  .pl-top { padding-left: var(--sp-6); padding-right: var(--sp-6); }
+  .gate-wrap { max-width: 560px; }
+}
+
+/* ------------------------------------------------------- 1100–1439 (xl) */
+@media (min-width: 1100px) {
+  :root { --nav-h: 0px; --content-max: 940px; }
+  body { padding-left: var(--rail-w); }
+  .topbar {
+    padding-left: max(var(--gutter), calc((100% - var(--content-max)) / 2 + var(--gutter)));
+    padding-right: max(var(--gutter), calc((100% - var(--content-max)) / 2 + var(--gutter)));
+  }
+  .view {
+    max-width: var(--content-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+    padding-bottom: var(--sp-7);
+  }
+  .tabbar { width: var(--rail-w); }
+  .tab { font-size: 0.84rem; }
+  .sheet { max-width: var(--sheet-max); }
+  .gate-wrap { max-width: 980px; }
+}
+
+/* ------------------------------------------------------- 1440–1699 (2xl) */
+@media (min-width: 1440px) {
+  :root { --content-max: 1040px; --gutter: 36px; --fs-hero: clamp(3rem, 1.4rem + 3vw, 3.8rem); }
+  .hero h1 { max-width: 26ch; }
+  .section { margin-top: clamp(30px, 2.4vw, 44px); }
+  .gate-wrap { grid-template-columns: minmax(0, 1fr) minmax(360px, 420px); }
+}
+
+/* ------------------------------------------------------- 1700–1919 (3xl) */
+@media (min-width: 1700px) {
+  :root { --content-max: 1120px; --rail-w: 300px; }
+  .stat-grid { gap: var(--sp-3); }
+  .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ---------------------------------------------------------- 1920+ (ultra) */
+@media (min-width: 1920px) {
+  :root { --content-max: 1200px; --gutter: 44px; }
+  /* a trilha acompanha o conteúdo: o conjunto fica centrado na tela */
+  body { padding-left: calc((100vw - var(--content-max) - var(--rail-w)) / 2); }
+  .tabbar { left: calc((100vw - var(--content-max) - var(--rail-w)) / 2); }
+  .quick { min-height: 124px; }
+  .model { min-height: 190px; }
+  .chart { height: clamp(180px, 12vh + 80px, 260px); }
+  .gate-wrap { max-width: 1080px; }
+}
+
+/* -------------------------------------------------------- 2560+ (ultrawide) */
+@media (min-width: 2560px) {
+  :root { --content-max: 1320px; --rail-w: 320px; }
+  .stat-hero { padding: var(--sp-6); }
+  .treino-card { padding: var(--sp-5); }
+}
+
+/* ------------------------------------------------------- 3200+ (superwide) */
+@media (min-width: 3200px) {
+  :root { --content-max: 1440px; }
+}
+
+/* ------------------------------------------- altura / orientação / mobile */
+/* celular deitado ou janela baixa: reorganiza o player em duas colunas */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root { --nav-h: 62px; }
+  .player {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, min(44vw, 380px));
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "top      top"
+      "timeline timeline"
+      "center   list"
+      "controls upnext";
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .pl-top { grid-area: top; padding-top: calc(8px + var(--safe-t)); padding-bottom: 6px; }
+  .pl-timeline { grid-area: timeline; margin-left: var(--sp-4); margin-right: var(--sp-4); }
+  .pl-center { grid-area: center; padding: 6px 16px; gap: 8px; min-height: 0; }
+  .pl-controls { grid-area: controls; gap: 20px; padding: 0 16px 10px; }
+  .pl-upnext { grid-area: upnext; text-align: center; padding: 0 14px 8px; }
+  .pl-list {
+    grid-area: list;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    padding: var(--sp-2) var(--sp-3) calc(var(--sp-2) + var(--safe-b));
+    align-content: start;
+  }
+  .ring-wrap { width: min(48vh, 232px); }
+  .pl-time { font-size: clamp(1.9rem, 7.6vh, 3.1rem); }
+  .pl-badge, .badge-tipo { max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pl-block-name { font-size: 0.9rem; line-height: 1.15; }
+  .pl-state { font-size: var(--fs-2xs); }
+  .pl-foco {
+    font-size: var(--fs-2xs);
+    line-height: 1.35;
+    max-width: 92%;
+    margin: 0 auto;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ctrl { width: 42px; height: 42px; }
+  .ctrl-main { width: 62px; height: 62px; }
+  .ctrl-main svg { width: 24px; height: 24px; }
+  .hero { padding-top: var(--sp-2); }
+
+  /* gate em paisagem: duas colunas compactas */
+  .gate-wrap { padding-top: calc(12px + var(--safe-t)); max-width: 860px; }
+}
+
+/* janelas baixas (notebook com barra do navegador + zoom alto) */
+@media (max-height: 620px) and (min-width: 900px) {
+  .pl-list { max-height: 30dvh; }
+  .gate-wrap { padding-top: calc(18px + var(--safe-t)); padding-bottom: 24px; }
+}
+
+/* telas altas: respira mais */
+@media (min-height: 900px) and (min-width: 900px) {
+  .section { margin-top: clamp(34px, 3.4vh, 52px); }
+}
+
+/* ------------------------------------------------- adaptação local */
+/* a lista do player é sempre full-width: media query resolve melhor que
+   container query (um container não consegue consultar a si mesmo).
+   width:100% mantém a caixa estável com o margin-inline:auto do desktop. */
+.pl-list { width: 100%; }
+@media (min-width: 900px) {
+  .pl-list { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2px 10px; }
+  .pl-row .rn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* picker de técnicas: o container é o corpo do sheet, a query mira a lista */
+.sheet-body { container-type: inline-size; }
+@container (min-width: 520px) {
+  .tec-list { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 10px; align-content: start; }
+}
+
+/* cartão de treino: ajustes internos conforme a própria largura */
+.card-grid { container-type: inline-size; }
+@container (min-width: 700px) {
+  .treino-card .tc-head { gap: var(--sp-4); }
+  .treino-card .play-btn { width: 54px; height: 54px; border-radius: 18px; }
+}
+
+/* overlays: o atributo [hidden] sempre vence qualquer regra de layout.
+   (sem isso, um `display` definido em media query reexibe o que deveria estar fechado) */
+[hidden] { display: none !important; }
+
+/* ícone de busca: qualquer svg direto do .search-row tem tamanho fixo
+   (um svg com viewBox e sem classe ocupa 300px e quebra o sheet) */
+.search-row > svg {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  color: var(--muted-2);
+  pointer-events: none;
+  flex: none;
+}
+
+/* editor: preparação + cor dividem a linha; em telas estreitas a cor ganha
+   a linha inteira para os 6 tons caberem sem quebrar em 5 + 1 */
+.grid-prep { margin-bottom: var(--sp-4); }
+@media (max-width: 559px) {
+  .grid-prep { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+  .grid-prep .swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  .grid-prep .swatch { width: auto; height: auto; aspect-ratio: 1; min-width: 26px; min-height: 26px; }
+}
+
+/* gate em duas colunas: marca + chamada à esquerda, acesso à direita.
+   Abaixo disso os dois blocos continuam empilhados (comportamento original). */
+@media (min-width: 1024px) {
+  .gate { display: grid; place-items: safe center; padding: 40px var(--gutter); }
+  .gate-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(350px, 410px);
+    column-gap: clamp(32px, 5vw, 84px);
+    align-items: center;
+    width: 100%;
+    max-width: 1040px;
+    padding: 0;
+  }
+  .gw-left { max-width: 470px; }
+  .gate-wrap h1 { font-size: clamp(2.6rem, 1.9rem + 2.6vw, 4.2rem); }
+  .gate-brand { margin-bottom: clamp(24px, 4vh, 44px); }
+  .gate-foot { text-align: left; }
+}
+
+/* anel do timer: acompanha a altura útil do desktop, sem sobrar vazio */
+@media (min-width: 900px) {
+  .ring-wrap { width: min(42vh, 380px); }
+}
+
+/* --------------------------------------------------------------- extras */
+/* barra de rolagem discreta também no Firefox */
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.16) transparent; }
+
+/* contraste reforçado quando o sistema pede */
+@media (prefers-contrast: more) {
+  :root {
+    --line: rgba(255, 255, 255, 0.16);
+    --line-2: rgba(255, 255, 255, 0.32);
+    --muted: #c3c8d2;
+    --muted-2: #9aa1ad;
+  }
+  .treino-card, .stat, .model, .quick { border-color: var(--line-2); }
+}
+
+/* impressão: sem cromo fixo, sem fundo escuro gastando tinta */
+@media print {
+  .topbar, .tabbar, .ambient, .confetti, .toast, #player, #sheet, #gate { display: none !important; }
+  body { background: #fff !important; color: #000 !important; padding-left: 0 !important; }
+  .view { max-width: none; padding: 0; }
+  .treino-card, .stat, .chart-card { break-inside: avoid; border-color: #ccc; }
+}
+
+/* ------------------------------------------- legibilidade mínima (>=11px) */
+.brand-text span,
+.m-kicker,
+.tab,
+.tab-label,
+.kb-lbl,
+.gate-foot,
+.stat .label,
+.perfil-stats span,
+.gp-txt small,
+.hist-date span,
+.pl-name span,
+.pl-row .n,
+.dur-inputs span,
+.q-body span,
+.section-head .hint,
+.pl-state,
+.bar-day,
+.tag,
+.chip-stat,
+.pl-upnext,
+.dq,
+.dur-quick .dq,
+.blk .dur-inputs span,
+.pl-block-name .reps-inline,
+.m-foot,
+.hist-dur,
+.tec-row p,
+.model .m-kicker,
+.perfil-row .pr-txt small,
+key-hint {
+  font-size: var(--fs-2xs);
+}
+
+/* --------------------------------------------------------- utilitários */
+.export-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.switch {
+  width: 46px;
+  height: 26px;
+  accent-color: var(--gold);
+  flex: none;
+}

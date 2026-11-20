@@ -38,7 +38,7 @@ const UPDATE = args.includes('--update');
 const only = (args.find((a) => a.startsWith('--only=')) || '').split('=')[1];
 const widthsArg = (args.find((a) => a.startsWith('--widths=')) || '').split('=')[1];
 const widths = widthsArg ? widthsArg.split(',').map(Number) : WIDTHS;
-const states = only ? only.split(',') : VIEWS.concat(['gate', 'player', 'editor', 'perfil', 'picker', 'ex']);
+const states = only ? only.split(',') : VIEWS.concat(['gate', 'player', 'editor', 'perfil', 'picker', 'ex', 'planos']);
 
 /* ------------------------------------------------------------ utilidades */
 const chromePath = () => {
@@ -387,6 +387,15 @@ try {
         await sleep(420);
         await S.eval(`(() => { const n = document.querySelector('[data-action="pl-next"]'); if (n) n.click(); return true; })()`);
         await sleep(500);
+      } else if (state === 'planos') {
+        if (await S.eval(`document.querySelector('#gate').hidden === false`)) {
+          await S.eval(`window.Tatame.entrar('${chave}'); true`);
+          await sleep(400);
+        }
+        await S.eval(`document.querySelectorAll('.tab')[1].click(); true`);
+        await sleep(300);
+        await S.eval(`(() => { const b = document.querySelector('[data-action="abrir-planos"]'); if (b) b.click(); return !!b; })()`);
+        await sleep(480);
       } else if (state === 'ex') {
         if (await S.eval(`document.querySelector('#gate').hidden === false`)) {
           await S.eval(`window.Tatame.entrar('${chave}'); true`);
@@ -437,7 +446,7 @@ try {
       const cobrindo = [];
       if (state !== 'gate' && ovl.gate) cobrindo.push('tela de entrada por cima do app');
       if (state !== 'player' && ovl.player) cobrindo.push('player por cima do app');
-      if (!['editor', 'picker', 'perfil', 'ex'].includes(state) && ovl.sheet) cobrindo.push('sheet por cima do app');
+      if (!['editor', 'picker', 'perfil', 'ex', 'planos'].includes(state) && ovl.sheet) cobrindo.push('sheet por cima do app');
       if (cobrindo.length) throw new Error('sobreposição: ' + cobrindo.join(', '));
 
       const m = await S.eval(AUDIT_FN);

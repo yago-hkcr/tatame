@@ -295,3 +295,364 @@ const MODELOS = [
     ],
   },
 ];
+/* ==========================================================================
+   PLANOS PRONTOS
+   --------------------------------------------------------------------------
+   Um plano é um pacote de treinos + exercícios personalizados que entra no
+   perfil atual com um toque (Treinos → Planos). Nada é sobrescrito: os
+   treinos e exercícios são somados aos que a pessoa já tem.
+   ========================================================================== */
+
+/* exercícios do plano (entram em "Meus exercícios" com id estável) */
+const EX_PLANO_DUPLA_60 = [
+  { id: 'cx-pl-barra-judogi', nome: 'Barra fixa com judogi', cat: 'forca', dica: '3 a 6 reps, descida em 3 s' },
+  { id: 'cx-pl-remada-halteres', nome: 'Remada curvada 2 halteres', cat: 'forca', dica: '12 a 15 reps, perto da falha' },
+  { id: 'cx-pl-bulgaro', nome: 'Agachamento búlgaro 2 halteres', cat: 'forca', dica: '6 por perna, descida 2 s' },
+  { id: 'cx-pl-levantada', nome: 'Levantada de parceiro', cat: 'forca', dica: '4 a 5 reps, coluna reta' },
+  { id: 'cx-pl-kuzushi', nome: 'Puxada de kuzushi no elástico', cat: 'golpe', dica: 'arco para baixo e para trás' },
+  { id: 'cx-pl-joelhos-barra', nome: 'Elevação de joelhos na barra', cat: 'forca', dica: '30 s, sem balançar' },
+  { id: 'cx-pl-prancha-lateral', nome: 'Prancha lateral', cat: 'forca', dica: '30 s por lado, corpo reto' },
+  { id: 'cx-pl-toalha', nome: 'Pegada na toalha no elástico', cat: 'forca', dica: '4 puxadas + 20 s suspenso' },
+  { id: 'cx-pl-disputa-pegada', nome: 'Disputa de pegada', cat: 'golpe', dica: '40 s, quebrar a pegada do outro' },
+  { id: 'cx-pl-uchikomi-elastico', nome: 'Uchikomi com elástico', cat: 'golpe', dica: '20 s de golpe, 15 repetições' },
+  { id: 'cx-pl-uchikomi-movimento', nome: 'Uchikomi em movimento', cat: 'golpe', dica: 'kuzushi e entrada, sem projetar' },
+  { id: 'cx-pl-combinacao', nome: 'Combinação ko-uchi e seoi', cat: 'golpe', dica: 'finta e entrada, dois lados' },
+  { id: 'cx-pl-reacao', nome: 'Reação ao sinal', cat: 'golpe', dica: 'entra na velocidade máxima' },
+  { id: 'cx-pl-arranco', nome: 'Arranco com halter, 1 braço', cat: 'forca', dica: '4 por braço em 20 s' },
+  { id: 'cx-pl-agachamento-salto', nome: 'Agachamento com salto', cat: 'forca', dica: '6 a 8, velocidade máxima' },
+  { id: 'cx-pl-flexao-explosiva', nome: 'Flexão explosiva', cat: 'forca', dica: '6 reps, sem quebrar a lombar' },
+  { id: 'cx-pl-salto-lateral', nome: 'Salto lateral', cat: 'cardio', dica: '6 para cada lado' },
+  { id: 'cx-pl-tai-sabaki', nome: 'Tai-sabaki (deslocamento)', cat: 'mobilidade', dica: '4 x 30 s: frente, lados, giro' },
+  { id: 'cx-pl-camaradinha', nome: 'Camaradinha, ponte e giro', cat: 'mobilidade', dica: '1 min de cada, sem pressa' },
+];
+
+const AQUECIMENTO_PADRAO = {
+  nome: 'Aquecimento',
+  tipo: 'aquecimento',
+  modo: 'tempo',
+  dur: 480,
+  reps: '8 min',
+  foco:
+    '2 min: polichinelo, skipping, agachamento, corrida. 3 min: ombro, quadril, pescoço, punhos, afundo. 2 min de tai-sabaki. 1 min: 6 entradas lentas por lado.',
+  tecnicas: ['cx-pl-tai-sabaki'],
+};
+
+const VOLTA_CALMA_PADRAO = {
+  nome: 'Volta à calma',
+  tipo: 'alongamento',
+  modo: 'tempo',
+  dur: 300,
+  reps: '5 min',
+  foco:
+    '2 min de caminhada com respiração (4 s inspira, 6 s expira) + 6 x 30 s de alongamento: quadril, posterior, ombro, peito, pescoço, punhos.',
+  tecnicas: [],
+};
+
+const PLANO_DUPLA_60 = {
+  id: 'dupla-60kg',
+  nome: 'Judô em dupla · 60 kg',
+  subtitulo: 'Barra fixa e 2 halteres de 6 kg · 7:00 às 7:45',
+  descricao:
+    'Plano de 45 min por sessão, em dupla, sem quedas e sem randori livre. Cinco dias de treino, sábado de simulação e domingo de recuperação ativa. Cada bloco já conta as trocas de material e o descanso entre séries.',
+  meta: '270 min por semana',
+  exercicios: EX_PLANO_DUPLA_60,
+  treinos: [
+    {
+      nome: 'Segunda · técnica e combinações',
+      descricao: 'Automatizar 3 golpes e 2 combinações com velocidade, nos dois lados. Elástico e judogi.',
+      cor: '#e8c063',
+      prep: 10,
+      blocos: [
+        AQUECIMENTO_PADRAO,
+        {
+          nome: 'Uchikomi com elástico',
+          tipo: 'uchikomi',
+          modo: 'tempo',
+          dur: 720,
+          reps: '12 x 20 s / 40 s · 15 reps',
+          foco: '4 séries do golpe 1, 4 do golpe 2, 4 do golpe 3. Troque o lado a cada 2 séries. Esforço 8.',
+          tecnicas: ['cx-pl-uchikomi-elastico', 'ippon-seoi-nage'],
+        },
+        {
+          nome: 'Troca',
+          tipo: 'descanso',
+          modo: 'tempo',
+          dur: 60,
+          reps: '1 min',
+          foco: 'Soltem o elástico, bebam água e fiquem frente a frente.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Uchikomi em movimento',
+          tipo: 'uchikomi',
+          modo: 'tempo',
+          dur: 480,
+          reps: '4 x 1 min 30 / 30 s',
+          foco:
+            'Quem ataca pega, tira o equilíbrio e entra até o ponto de projetar, sem projetar. 1ª e 3ª vez: você. 2ª e 4ª: seu irmão.',
+          tecnicas: ['cx-pl-uchikomi-movimento', 'kouchi-gari'],
+        },
+        {
+          nome: 'Combinações',
+          tipo: 'tecnica',
+          modo: 'tempo',
+          dur: 480,
+          reps: '4 x 1 min 30 / 30 s',
+          foco: 'Finta de ko-uchi e depois seoi-nage; depois o seu segundo golpe e uma finta. Dois lados, sem projetar.',
+          tecnicas: ['cx-pl-combinacao', 'kouchi-gari', 'ippon-seoi-nage'],
+        },
+        {
+          nome: 'Disputa de pegada',
+          tipo: 'fisico',
+          modo: 'tempo',
+          dur: 180,
+          reps: '3 x 40 s / 20 s',
+          foco: 'Cada um tenta pegar gola e manga e quebrar a pegada do outro. Esforço 8.',
+          tecnicas: ['cx-pl-disputa-pegada'],
+        },
+        VOLTA_CALMA_PADRAO,
+      ],
+    },
+    {
+      nome: 'Terça · força, abdômen e pegada',
+      descricao: 'Força de puxada, estabilidade de ombro, perna forte, levantar o adversário e pegada que não abre.',
+      cor: '#ff6b57',
+      prep: 5,
+      blocos: [
+        AQUECIMENTO_PADRAO,
+        {
+          nome: 'Força · barra e halteres',
+          tipo: 'fisico',
+          modo: 'tempo',
+          dur: 1200,
+          reps: '15 x 40 s / 40 s · 5 ex, 3 voltas',
+          foco:
+            '1) puxada de kuzushi no elástico, 2) barra fixa com judogi (3 a 6), 3) remada com 2 halteres (12 a 15), 4) búlgaro com 2 halteres (6 por perna), 5) levantada de parceiro (4 a 5). Alternem a barra e os halteres.',
+          tecnicas: ['cx-pl-kuzushi', 'cx-pl-barra-judogi', 'cx-pl-remada-halteres', 'cx-pl-bulgaro', 'cx-pl-levantada'],
+        },
+        {
+          nome: 'Abdômen',
+          tipo: 'fisico',
+          modo: 'tempo',
+          dur: 360,
+          reps: '6 x 30 s / 30 s',
+          foco: 'Rodadas 1, 3 e 5: elevação de joelhos na barra + prancha lateral. 2, 4 e 6: trocam.',
+          tecnicas: ['cx-pl-joelhos-barra', 'cx-pl-prancha-lateral'],
+        },
+        {
+          nome: 'Pegada',
+          tipo: 'fisico',
+          modo: 'tempo',
+          dur: 360,
+          reps: '4 x 1 min / 30 s troca',
+          foco:
+            'Um na barra (judogi: puxadas até 6 e depois suspenso) e o outro na toalha no elástico (4 puxadas, 20 s parado). Rodadas 1 e 3: você na barra.',
+          tecnicas: ['cx-pl-toalha', 'cx-pl-barra-judogi'],
+        },
+        VOLTA_CALMA_PADRAO,
+      ],
+    },
+    {
+      nome: 'Quarta · luta de chão',
+      descricao: 'Imobilizar, fugir e passar a guarda em ritmo de competição, sem quedas.',
+      cor: '#59d0a4',
+      prep: 5,
+      blocos: [
+        AQUECIMENTO_PADRAO,
+        {
+          nome: 'Exercícios de base',
+          tipo: 'newaza',
+          modo: 'tempo',
+          dur: 300,
+          reps: '5 min',
+          foco:
+            '1 min de camaradinha, 1 min de ponte (10 reps), 1 min de giro de tartaruga, 2 min de kesa-gatame sem resistência.',
+          tecnicas: ['cx-pl-camaradinha', 'kesa-gatame'],
+        },
+        {
+          nome: 'Troca',
+          tipo: 'descanso',
+          modo: 'tempo',
+          dur: 60,
+          reps: '1 min',
+          foco: 'Bebam água e se posicionem para a luta.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Luta de chão · 4 posições',
+          tipo: 'newaza',
+          modo: 'tempo',
+          dur: 960,
+          reps: '4 x 3 min / 1 min',
+          foco:
+            'Quem ataca tenta imobilizar 20 s (ippon); quem defende foge. 1ª e 3ª: você ataca. 2ª e 4ª: seu irmão. Esforço 8.',
+          tecnicas: ['kesa-gatame', 'yoko-shiho-gatame'],
+        },
+        {
+          nome: 'Do equilíbrio ao chão',
+          tipo: 'newaza',
+          modo: 'tempo',
+          dur: 600,
+          reps: '4 x 2 min / 30 s',
+          foco:
+            'Em pé, pegada e tirar o equilíbrio. Quem defende se ajoelha com controle; quem atacou vai direto para a imobilização.',
+          tecnicas: ['kesa-gatame'],
+        },
+        VOLTA_CALMA_PADRAO,
+      ],
+    },
+    {
+      nome: 'Quinta · potência, reação e fôlego',
+      descricao: 'Ficar mais rápido, mais explosivo e aguentar o ritmo de luta. 1 halter por pessoa.',
+      cor: '#7fb2ff',
+      prep: 5,
+      blocos: [
+        AQUECIMENTO_PADRAO,
+        {
+          nome: 'Uchikomi rápido',
+          tipo: 'uchikomi',
+          modo: 'tempo',
+          dur: 480,
+          reps: '8 x 20 s / 40 s',
+          foco:
+            'Esforço 9, 12 a 15 repetições. As 4 primeiras: velocidade pura. As 4 últimas: reação ao sinal de mão.',
+          tecnicas: ['cx-pl-uchikomi-elastico', 'cx-pl-reacao'],
+        },
+        {
+          nome: 'Troca',
+          tipo: 'descanso',
+          modo: 'tempo',
+          dur: 60,
+          reps: '1 min',
+          foco: 'Bebam água, peguem 1 halter cada um e preparem o espaço dos saltos.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Potência',
+          tipo: 'fisico',
+          modo: 'tempo',
+          dur: 720,
+          reps: '12 x 20 s / 40 s · 4 ex, 3 séries',
+          foco:
+            '1) agachamento com salto (6 a 8), 2) arranco com halter 1 braço (4 por braço), 3) flexão explosiva (6), 4) salto lateral (6 por lado). 1 m de distância entre vocês.',
+          tecnicas: ['cx-pl-agachamento-salto', 'cx-pl-arranco', 'cx-pl-flexao-explosiva', 'cx-pl-salto-lateral'],
+        },
+        {
+          nome: 'Fôlego de luta',
+          tipo: 'uchikomi',
+          modo: 'tempo',
+          dur: 660,
+          reps: '3 x 3 min / 1 min',
+          foco:
+            'Em cada bloco, 6 x (20 s de uchikomi veloz + 10 s de disputa de pegada), sem parar. Quem ataca se alterna a cada 20 s.',
+          tecnicas: ['cx-pl-disputa-pegada'],
+        },
+        VOLTA_CALMA_PADRAO,
+      ],
+    },
+    {
+      nome: 'Sábado · simulação de competição',
+      descricao: 'Treinar o ritmo e a sequência de uma luta real, sem quedas. Caderno na mão.',
+      cor: '#c9a2ff',
+      prep: 10,
+      blocos: [
+        AQUECIMENTO_PADRAO,
+        {
+          nome: 'Lutas de treino · 4 min',
+          tipo: 'randori',
+          modo: 'tempo',
+          dur: 1140,
+          reps: '4 x 4 min / 1 min',
+          foco:
+            '0:00 a 1:30 disputa de pegada; 1:30 a 3:00 entradas e combinações até o kuzushi; 3:00 a 4:00 chão com imobilização. Esforço 8.',
+          tecnicas: ['cx-pl-uchikomi-movimento', 'kesa-gatame'],
+        },
+        {
+          nome: 'Troca',
+          tipo: 'descanso',
+          modo: 'tempo',
+          dur: 60,
+          reps: '1 min',
+          foco: 'Bebam água e se posicionem para o chão.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Luta de chão livre',
+          tipo: 'newaza',
+          modo: 'tempo',
+          dur: 420,
+          reps: '2 x 3 min / 1 min',
+          foco: 'Chão livre em ritmo de competição. Contem as imobilizações de 20 s de cada um.',
+          tecnicas: ['kesa-gatame', 'yoko-shiho-gatame'],
+        },
+        {
+          nome: 'Golden score',
+          tipo: 'randori',
+          modo: 'tempo',
+          dur: 120,
+          reps: '2 min',
+          foco: 'Pegada e chão. Quem pontuar primeiro (imobilização de 10 s) vence. Esforço 9.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Análise',
+          tipo: 'outro',
+          modo: 'manual',
+          dur: 180,
+          reps: '3 min',
+          foco:
+            'Cada um anota: 1 coisa que funcionou, 1 que falhou e a meta da semana. Depois digam 1 acerto de cada um em voz alta.',
+          tecnicas: [],
+        },
+        VOLTA_CALMA_PADRAO,
+      ],
+    },
+    {
+      nome: 'Domingo · recuperação e mente',
+      descricao: '45 min leves: mobilidade, alongamento, visualização e vídeo. Sem trabalho intenso.',
+      cor: '#8b93a1',
+      prep: 0,
+      blocos: [
+        {
+          nome: 'Mobilidade',
+          tipo: 'alongamento',
+          modo: 'tempo',
+          dur: 900,
+          reps: '15 min · 2 voltas',
+          foco: 'Quadril, coluna, ombros e punhos: 30 s em cada articulação, 2 voltas.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Alongamento',
+          tipo: 'alongamento',
+          modo: 'tempo',
+          dur: 600,
+          reps: '10 min · 5 x 1 min',
+          foco: 'Posterior, adutores, quadríceps e pescoço: 5 x 1 min por região.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Visualização',
+          tipo: 'outro',
+          modo: 'tempo',
+          dur: 600,
+          reps: '10 min',
+          foco:
+            'Deitado, olhos fechados: imagine uma luta inteira — pegada, kuzushi, entrada, pontuação. Em detalhes.',
+          tecnicas: [],
+        },
+        {
+          nome: 'Vídeo',
+          tipo: 'outro',
+          modo: 'tempo',
+          dur: 600,
+          reps: '10 min',
+          foco: 'Lutas de atletas de 60 kg: pegada, entradas e ne-waza. Anote 2 ideias.',
+          tecnicas: [],
+        },
+      ],
+    },
+  ],
+};
+
+const PLANOS = [PLANO_DUPLA_60];

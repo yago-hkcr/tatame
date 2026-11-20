@@ -1995,3 +1995,83 @@ body.locked { overflow: hidden; }
 #ex-cats .chip.on {
   background: color-mix(in srgb, var(--gold) 16%, transparent);
 }
+
+/* ==========================================================================
+   Planos prontos — dois botões no topo da aba Treinos + cartão do plano
+   ========================================================================== */
+.row-btns {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.row-btns .btn { flex: 1 1 auto; }
+@media (max-width: 359px) {
+  .row-btns { flex-direction: column; }
+}
+
+.plan-card {
+  position: relative;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  background:
+    radial-gradient(420px 180px at 0% 0%, rgba(232, 192, 99, 0.09), transparent 68%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+  margin-bottom: var(--sp-3);
+}
+.plan-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.plan-card h3 {
+  font-size: clamp(1.02rem, 0.95rem + 0.5vw, 1.28rem);
+  letter-spacing: -0.02em;
+  margin: 0 0 2px;
+}
+.plan-sub {
+  font-size: var(--fs-sm);
+  color: var(--gold-2);
+  margin: 0 0 10px;
+}
+.plan-desc {
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0 0 14px;
+  max-width: 62ch;
+}
+.plan-days {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.plan-days li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.025);
+  font-size: var(--fs-sm);
+}
+.plan-days .pd-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-days .pd-info {
+  flex: none;
+  font-family: var(--mono);
+  font-size: var(--fs-2xs);
+  color: var(--muted-2);
+}
+.plan-ok {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--gold-2);
+  margin: 0;
+}
+.plan-ok svg { width: 16px; height: 16px; flex: none; }

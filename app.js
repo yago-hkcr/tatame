@@ -476,6 +476,7 @@
     arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.6 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.2 2.6L5.3 13.4h5.3l-.7 8 8-10.9h-5.3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
     grip: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.7 12.6V6.3a1.55 1.55 0 013.1 0v5M10.8 11V4.9a1.55 1.55 0 013.1 0v6.2M13.9 12V6.7a1.55 1.55 0 013.1 0v6.8c0 4.2-2.6 6.9-6.3 6.9-3.1 0-5.3-1.8-6.2-5.1l-.9-3.3a1.45 1.45 0 012.7-.9l.9 2.1" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.8l4.4 4.3L19 7.4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     mat: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9.4 3.7v16.6M14.6 3.7v16.6M3.7 9.4h16.6M3.7 14.6h16.6" stroke="currentColor" stroke-width="1" opacity=".5"/></svg>',
     dumbbell: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.2v5.6M7.2 7v10M16.8 7v10M20 9.2v5.6M7.2 12h9.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     infinity: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 9.2a2.8 2.8 0 000 5.6c2.5 0 3.4-2.8 5.4-2.8s2.9 2.8 5.4 2.8a2.8 2.8 0 000-5.6c-2.5 0-3.4 2.8-5.4 2.8s-2.9-2.8-5.4-2.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
@@ -704,8 +705,13 @@
         </div>
       </section>
 
-      <div class="stack" style="margin-top:22px">
-        <button class="btn primary block" data-action="novo-treino">${ICON.plus} Novo treino</button>
+      <div class="stack row-btns" style="margin-top:22px">
+        <button class="btn primary" data-action="novo-treino">${ICON.plus} Novo treino</button>
+        ${
+          PLANOS.length
+            ? `<button class="btn ghost" data-action="abrir-planos">${ICON.mat} Planos</button>`
+            : ''
+        }
       </div>
 
       <section class="section">
@@ -713,7 +719,9 @@
         ${
           lista.length
             ? `<div class="card-grid">${lista.map(treinoCard).join('')}</div>`
-            : `<div class="empty"><div class="e-mark">${ICON.spark}</div><h3>Nada por aqui</h3><p>Crie um treino do zero ou use um modelo na aba Treinar.</p></div>`
+            : `<div class="empty"><div class="e-mark">${ICON.spark}</div><h3>Nada por aqui</h3><p>Crie um treino do zero, use um modelo da aba Treinar ou comece por um plano pronto.</p>${
+                PLANOS.length ? `<button class="btn ghost sm" data-action="abrir-planos">${ICON.mat} Ver planos prontos</button>` : ''
+              }</div>`
         }
       </section>
 
@@ -1090,6 +1098,8 @@
         ? tecHtml(s.id)
         : s.type === 'ex'
         ? exFormHtml(s)
+        : s.type === 'planos'
+        ? planosHtml()
         : s.type === 'perfil'
         ? perfilHtml()
         : s.type === 'resumo'
@@ -1125,6 +1135,46 @@
         <textarea id="tec-nota" data-tec-nota="${id}" placeholder="Detalhes da sua pegada, ajustes do sensei, o que errou no randori...">${esc(reg.n || '')}</textarea>
       </div>
       `,
+      `<button class="btn ghost" data-action="fechar-sheet">Fechar</button>`
+    );
+  }
+
+  /* ------------------------------------------------------- planos sheet */
+  function planosHtml() {
+    const cards = PLANOS.map((p) => {
+      const mins = p.treinos.reduce((a, t) => a + somaDur(t.blocos), 0);
+      const ativo = p.treinos.every((t) => db.treinos.some((x) => x.nome === t.nome));
+      return `
+      <div class="plan-card">
+        <div class="plan-head">
+          <span class="chip-stat hot">${ICON.mat}<b>${p.treinos.length}</b> treinos</span>
+          <span class="chip-stat"><b>${Math.round(mins / 60)}</b> min no total</span>
+          <span class="chip-stat"><b>${p.exercicios.length}</b> exercícios</span>
+        </div>
+        <h3>${esc(p.nome)}</h3>
+        <p class="plan-sub">${esc(p.subtitulo)}</p>
+        <p class="plan-desc">${esc(p.descricao)}</p>
+        <ol class="plan-days">
+          ${p.treinos
+            .map(
+              (t) =>
+                `<li><span class="pd-nome">${esc(t.nome)}</span><span class="pd-info">${(t.blocos || []).length} blocos · ${durText(
+                  somaDur(t.blocos)
+                )}</span></li>`
+            )
+            .join('')}
+        </ol>
+        ${
+          ativo
+            ? `<p class="plan-ok">${ICON.check} Já está no seu tatame.</p>`
+            : `<button class="btn primary block" data-action="add-plano" data-id="${p.id}">${ICON.plus} Adicionar ao meu tatame</button>`
+        }
+      </div>`;
+    }).join('');
+
+    return sheetShell(
+      'Planos prontos',
+      `${cards}<p class="tiny muted" style="margin:16px 0 0">Os treinos e exercícios entram na sua chave — nada do que você já tem é apagado.</p>`,
       `<button class="btn ghost" data-action="fechar-sheet">Fechar</button>`
     );
   }
@@ -1939,6 +1989,51 @@
       if (!b) return;
       b.tecnicas = (b.tecnicas || []).filter((x) => x !== id);
       renderSheet();
+    },
+
+    /* ------------------------------------------------------ planos prontos */
+    'abrir-planos'() {
+      closeSheet();
+      openSheet({ type: 'planos' });
+    },
+
+    'add-plano'(el) {
+      const p = PLANOS.find((x) => x.id === el.dataset.id);
+      if (!p) return;
+      if (p.treinos.every((t) => db.treinos.some((x) => x.nome === t.nome))) {
+        return toast('Esse plano já está no seu tatame');
+      }
+      // exercícios: soma sem duplicar (id estável por plano)
+      db.exercicios = Array.isArray(db.exercicios) ? db.exercicios : [];
+      p.exercicios.forEach((e) => {
+        if (!db.exercicios.some((x) => x.id === e.id)) {
+          db.exercicios.unshift({ id: e.id, nome: e.nome, cat: e.cat, dica: e.dica || '', criado: Date.now() });
+        }
+      });
+      // treinos: entram no começo da lista, prontos para editar
+      const novos = p.treinos.map((t) => ({
+        id: uid(),
+        nome: t.nome,
+        descricao: t.descricao || '',
+        cor: ACENTOS.some((a) => a.cor === t.cor) ? t.cor : '',
+        prep: t.prep == null ? db.config.prep : t.prep,
+        blocos: (t.blocos || []).map((b) => ({
+          id: uid(),
+          nome: b.nome || 'Bloco',
+          tipo: TIPO[b.tipo] ? b.tipo : 'outro',
+          modo: b.modo === 'manual' ? 'manual' : 'tempo',
+          dur: Math.max(0, Number(b.dur) || 0),
+          reps: b.reps || '',
+          foco: b.foco || '',
+          tecnicas: (b.tecnicas || []).slice(),
+        })),
+      }));
+      db.treinos = novos.concat(db.treinos);
+      saveDb();
+      closeSheet();
+      ui.view = 'treinos';
+      render();
+      toast(p.treinos.length + ' treinos e ' + p.exercicios.length + ' exercícios adicionados');
     },
 
     /* ------------------------------------------- exercícios personalizados */

@@ -32,6 +32,7 @@ No celular, use o mesmo Wi-Fi e acesse `http://SEU-IP:5178`. No Chrome/Safari es
 - **Progresso** — sequência de dias, minutos totais, média por sessão, anel de meta, gráfico de 14 dias e histórico.
 - **Técnicas** — 77 técnicas (nage-waza, katame-waza e ukemi) com kanji e dica rápida; marque como "estudando"/"afinada" e escreva suas anotações.
 - **Exercícios personalizados** — crie os seus (flexão, agachamento, prancha, corda, o golpe que você está montando) com categoria (força, golpe, mobilidade, cardio, outro), dica de execução, nível e anotações. Eles aparecem no repertório, entram em qualquer bloco pelo seletor de técnicas e contam no treino como uma técnica — e dá para criar um direto de dentro do bloco, sem sair do editor.
+- **Planos prontos** — pacotes de treinos que entram na sua chave com um toque (*Treinos → Planos*). Hoje vem o **Judô em dupla · 60 kg**: 6 sessões de 45 min (segunda a domingo), 270 min por semana, com barra fixa e 2 halteres de 6 kg, e os 19 exercícios do plano já criados em *Meus exercícios*.
 - **Backup** — exportar/importar tudo em JSON (o arquivo carrega a sua chave).
 
 ## Estrutura
@@ -39,7 +40,7 @@ No celular, use o mesmo Wi-Fi e acesse `http://SEU-IP:5178`. No Chrome/Safari es
 ```
 index.html            casca do app
 styles.css            sistema visual 2.0 (ink + gold) + componentes
-data.js               técnicas, tipos de bloco e modelos de treino
+data.js               técnicas, tipos de bloco, modelos e planos prontos
 app.js                estado, telas, timer e persistência
 adaptive.css          motor de layout adaptativo (tokens, breakpoints, container queries)
 fonts/                Inter Tight, JetBrains Mono e Instrument Serif (woff2 locais)
@@ -97,10 +98,11 @@ largura e falha se encontrar: rolagem horizontal, elemento fora da viewport, alv
 24 px, texto abaixo de 11 px, container cortado, overlay (entrada/sheet/player) cobrindo a tela
 fora do estado atual ou erro de console.
 
-Fluxo funcional completo (criar exercício → usar no treino → player → editar → excluir):
+Fluxos funcionais completos:
 
 ```bash
-node tests/qa-exercicios.mjs
+node tests/qa-exercicios.mjs   # criar exercício → usar no treino → player → editar → excluir
+node tests/qa-plano.mjs        # abrir planos → aplicar → 6 treinos de 45 min, 19 exercícios, sem duplicar
 ```
 Salva um PNG por combinação em `tests/.out`, um JSON em `tests/last-report.json` e uma assinatura
 perceptual (grade 16×16 de luminância) em `tests/baseline/hashes.json` — assim a regressão visual

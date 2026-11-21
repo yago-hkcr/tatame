@@ -1644,14 +1644,6 @@
       : etapa
       ? etapa.foco || b.foco || ''
       : b.foco || '';
-    /* texto do estado: etapas em spans separados para o anel pequeno poder
-       esconder a volta em vez de cortar o texto */
-    const idxEtapa = emPausa ? '' : 'etapa ' + cur.work + '/' + cur.totalWork;
-    const txtVolta = cur.voltas > 1 ? 'volta ' + cur.volta + '/' + cur.voltas : '';
-    const estadoHtml = comEtapas
-      ? (idxEtapa ? `<span class="st-etapa">${idxEtapa}</span>` : '') +
-        (txtVolta ? `<span class="st-volta">${txtVolta}</span>` : '')
-      : esc(b.modo === 'manual' ? 'livre' : emPausa ? 'descanso' : 'tempo');
     const tags = emPausa
       ? etapa && etapa.tec
         ? [etapa.tec]
@@ -1707,7 +1699,7 @@
             <div class="pl-block-name" id="pl-block">${esc(prep ? 'Prepare-se' : titulo)}${
               !prep && repsInline ? `<span class="reps-inline">${esc(repsInline)}</span>` : ''
             }</div>
-            <div class="pl-state" id="pl-state">${prep ? 'começando' : estadoHtml}</div>
+            <div class="pl-state" id="pl-state">${estadoHtml()}</div>
           </div>
         </div>
         <p class="pl-foco" id="pl-foco">${esc(prep ? 'Respire. O primeiro bloco começa em instantes.' : foco)}</p>
@@ -1950,22 +1942,44 @@
 
   function togglePause() {
     if (!P) return;
+    const st = $('#pl-state');
     if (P.phase === 'paused') {
       P.phase = P.pausedFrom || 'run';
       P.last = performance.now();
       $('#pl-toggle').innerHTML = pauseIcon();
-      const st = $('#pl-state');
-      if (st) st.textContent = P.phase === 'prep' ? 'começando' : P.blocos[P.i].modo === 'manual' ? 'livre' : 'tempo';
       $('#player').classList.remove('paused');
+      // volta a mostrar a etapa/volta de verdade (não um texto fixo)
+      if (st) st.innerHTML = estadoHtml();
     } else {
       P.pausedFrom = P.phase;
       P.phase = 'paused';
       $('#pl-toggle').innerHTML = playIcon();
-      const st = $('#pl-state');
-      if (st) st.textContent = 'pausado';
+      // 'pausado' sem perder a etapa: mostra etapa/volta + pausado embaixo
+      if (st) st.innerHTML = estadoHtml(true);
       $('#player').classList.add('paused');
       beep(440, 0.08, 0.16);
     }
+  }
+
+  /* texto do estado do anel (etapa/volta), com a marcação de pausa opcional */
+  function estadoHtml(pausado) {
+    if (!P) return '';
+    const b = P.blocos[P.i];
+    const cur = P.seq[P.si] || {};
+    if (P.phase === 'prep' || (pausado && P.pausedFrom === 'prep')) return 'começando';
+    const comEtapas = (b.etapas || []).length > 0;
+    if (!comEtapas) {
+      const base = b.modo === 'manual' ? 'livre' : cur.kind === 'rest' ? 'descanso' : 'tempo';
+      return pausado ? base + ' · pausado' : base;
+    }
+    const idx = cur.kind === 'rest' ? '' : 'etapa ' + cur.work + '/' + cur.totalWork;
+    const vol = cur.voltas > 1 ? 'volta ' + cur.volta + '/' + cur.voltas : '';
+    const pausa = pausado ? '<span class="st-pausa">pausado</span>' : '';
+    return (
+      (idx ? `<span class="st-etapa">${idx}</span>` : '') +
+      (vol ? `<span class="st-volta">${vol}</span>` : '') +
+      pausa
+    );
   }
   const playIcon = () => ICON.play;
   const pauseIcon = () => ICON.pause;

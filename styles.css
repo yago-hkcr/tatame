@@ -2271,3 +2271,10 @@ body.locked { overflow: hidden; }
 @container ring (max-width: 250px) {
   .pl-state .st-volta { display: none; }
 }
+
+/* 'pausado' ao lado da etapa, sem apagar o que a pessoa precisa ver */
+.pl-state .st-pausa { color: var(--gold); }
+.pl-state .st-pausa::before { content: "·"; margin: 0 0.45em; opacity: 0.5; color: var(--muted-2); }
+@container ring (max-width: 250px) {
+  .pl-state .st-volta { display: none; }
+}

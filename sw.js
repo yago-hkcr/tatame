@@ -1,13 +1,13 @@
 /* Tatame · service worker (offline) */
-const CACHE = 'tatame-v8';
+const CACHE = 'tatame-v9';
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=2.6.2',
-  './adaptive.css?v=2.6.2',
-  './app.js?v=2.6.2',
-  './data.js?v=2.6.2',
-  './fonts/fonts.css?v=2.6.2',
+  './styles.css?v=2.6.3',
+  './adaptive.css?v=2.6.3',
+  './app.js?v=2.6.3',
+  './data.js?v=2.6.3',
+  './fonts/fonts.css?v=2.6.3',
   './fonts/inter-tight-0.woff2',
   './fonts/jbmono-0.woff2',
   './fonts/instrument-serif-0.woff2',

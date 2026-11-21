@@ -326,15 +326,32 @@ const EX_PLANO_DUPLA_60 = [
   { id: 'cx-pl-camaradinha', nome: 'Camaradinha, ponte e giro', cat: 'mobilidade', dica: '1 min de cada, sem pressa' },
 ];
 
+/* cada etapa é um exercício com o seu tempo e a sua pausa */
+const et = (nome, dur, pausa, reps, tec) => ({ nome, dur, pausa, reps: reps || '', tec: tec || '' });
+
 const AQUECIMENTO_PADRAO = {
   nome: 'Aquecimento',
   tipo: 'aquecimento',
   modo: 'tempo',
   dur: 480,
-  reps: '8 min',
-  foco:
-    '2 min: polichinelo, skipping, agachamento, corrida. 3 min: ombro, quadril, pescoço, punhos, afundo. 2 min de tai-sabaki. 1 min: 6 entradas lentas por lado.',
+  reps: '8 min · 10 etapas',
+  foco: 'Sem parar entre as etapas. Se estiver frio, faça a primeira volta mais devagar.',
   tecnicas: ['cx-pl-tai-sabaki'],
+  voltas: 1,
+  pausaFinal: false,
+  etapas: [
+    et('Polichinelo', 30, 0, 'ritmo leve'),
+    et('Skipping no lugar', 30, 0, 'calcanhar no glúteo'),
+    et('Agachamento livre', 30, 0, 'amplitude completa'),
+    et('Corrida no lugar', 30, 0, 'soltando o ombro'),
+    et('Mobilidade de ombro', 45, 0, 'círculos nos dois sentidos'),
+    et('Mobilidade de quadril', 45, 0, 'círculo e balanço'),
+    et('Mobilidade de pescoço', 45, 0, 'devagar, sem forçar'),
+    et('Mobilidade de punho', 45, 0, 'flexão e extensão'),
+    et('Tai-sabaki · direita', 60, 0, 'deslocamento em 8', 'cx-pl-tai-sabaki'),
+    et('Tai-sabaki · esquerda', 60, 0, 'deslocamento em 8', 'cx-pl-tai-sabaki'),
+    et('Entradas lentas', 60, 0, '6 por lado, sem queda'),
+  ],
 };
 
 const VOLTA_CALMA_PADRAO = {
@@ -342,18 +359,25 @@ const VOLTA_CALMA_PADRAO = {
   tipo: 'alongamento',
   modo: 'tempo',
   dur: 300,
-  reps: '5 min',
-  foco:
-    '2 min de caminhada com respiração (4 s inspira, 6 s expira) + 6 x 30 s de alongamento: quadril, posterior, ombro, peito, pescoço, punhos.',
+  reps: '5 min · 7 etapas',
+  foco: 'Respiração 4 s inspirando, 6 s expirando. Sem balançar, sem dor.',
   tecnicas: [],
+  voltas: 1,
+  pausaFinal: false,
+  etapas: [
+    et('Caminhada respirando', 120, 0, '4 s dentro, 6 s fora'),
+    et('Alongar quadril', 30, 0, 'cada lado'),
+    et('Alongar posterior', 30, 0, 'perna estendida'),
+    et('Alongar ombro', 30, 0, 'braço cruzado'),
+    et('Alongar peito', 30, 0, 'mãos atrás'),
+    et('Alongar pescoço', 30, 0, 'lateral, devagar'),
+    et('Alongar punho', 30, 0, 'palma e dorso'),
+  ],
 };
-
-/* cada etapa é um exercício com o seu tempo e a sua pausa */
-const et = (nome, dur, pausa, reps, tec) => ({ nome, dur, pausa, reps: reps || '', tec: tec || '' });
 
 const PLANO_DUPLA_60 = {
   id: 'dupla-60kg',
-  versao: 2, // 2 = etapas cronometradas em cada bloco
+  versao: 3, // 3 = todos os blocos separados por exercício (aquecimento, base, domingo)
   nome: 'Judô em dupla · 60 kg',
   subtitulo: 'Barra fixa e 2 halteres de 6 kg · 7:00 às 7:45',
   descricao:
@@ -502,9 +526,17 @@ const PLANO_DUPLA_60 = {
           tipo: 'newaza',
           modo: 'tempo',
           dur: 300,
-          reps: '5 min',
-          foco: '1 min de camaradinha, 1 min de ponte (10 reps), 1 min de giro de tartaruga, 2 min de kesa-gatame sem resistência.',
+          reps: '5 min · 4 etapas',
+          foco: 'Em cada etapa, execute sem pressa: é aquecimento de chão, não é luta.',
           tecnicas: ['cx-pl-camaradinha', 'kesa-gatame'],
+          voltas: 1,
+          pausaFinal: false,
+          etapas: [
+            et('Camaradinha', 60, 0, 'ritmo constante', 'cx-pl-camaradinha'),
+            et('Ponte', 60, 0, '10 repetições'),
+            et('Giro de tartaruga', 60, 0, 'nos dois sentidos'),
+            et('Kesa-gatame sem resistência', 120, 0, 'entrar e ajustar', 'kesa-gatame'),
+          ],
         },
         {
           nome: 'Troca',
@@ -684,36 +716,66 @@ const PLANO_DUPLA_60 = {
           tipo: 'alongamento',
           modo: 'tempo',
           dur: 900,
-          reps: '15 min · 2 voltas',
-          foco: 'Quadril, coluna, ombros e punhos: 30 s em cada articulação, 2 voltas.',
+          reps: '15 min · 4 etapas × 3 voltas',
+          foco: 'Uma articulação por etapa, 1 min e 15 s em cada, 3 voltas. Sem forçar o fim de amplitude.',
           tecnicas: [],
+          voltas: 3,
+          pausaFinal: true,
+          etapas: [
+            et('Mobilidade de quadril', 75, 0, 'círculos e balanço'),
+            et('Mobilidade de coluna', 75, 0, 'gato-camelo e rotação'),
+            et('Mobilidade de ombros', 75, 0, 'bastão ou toalha'),
+            et('Mobilidade de punhos', 75, 0, 'palma, dorso e dedos'),
+          ],
         },
         {
           nome: 'Alongamento',
           tipo: 'alongamento',
           modo: 'tempo',
           dur: 600,
-          reps: '10 min · 5 x 1 min',
-          foco: 'Posterior, adutores, quadríceps e pescoço: 5 x 1 min por região.',
+          reps: '10 min · 5 etapas',
+          foco: 'Dois minutos por região, respirando fundo. Se doer, diminua a amplitude.',
           tecnicas: [],
+          voltas: 1,
+          pausaFinal: false,
+          etapas: [
+            et('Posterior de coxa', 120, 0, 'cada lado'),
+            et('Adutores', 120, 0, 'pernas abertas'),
+            et('Quadríceps', 120, 0, 'cada lado'),
+            et('Pescoço e trapézio', 120, 0, 'lateral e frente'),
+            et('Glúteo e lombar', 120, 0, 'joelho cruzado'),
+          ],
         },
         {
           nome: 'Visualização',
           tipo: 'outro',
           modo: 'tempo',
           dur: 600,
-          reps: '10 min',
-          foco: 'Deitado, olhos fechados: imagine uma luta inteira — pegada, kuzushi, entrada, pontuação. Em detalhes.',
+          reps: '10 min · 3 etapas',
+          foco: 'Deitado, olhos fechados, sem pressa.',
           tecnicas: [],
+          voltas: 1,
+          pausaFinal: false,
+          etapas: [
+            et('Respirar e relaxar', 120, 0, '10 respirações lentas'),
+            et('Luta imaginada', 300, 0, 'pegada, kuzushi, entrada, ponto'),
+            et('Revisar o que sentiu', 180, 0, 'onde travou? onde fluiu?'),
+          ],
         },
         {
           nome: 'Vídeo',
           tipo: 'outro',
           modo: 'tempo',
           dur: 600,
-          reps: '10 min',
-          foco: 'Lutas de atletas de 60 kg: pegada, entradas e ne-waza. Anote 2 ideias.',
+          reps: '10 min · 2 etapas',
+          foco: 'Assista e depois escreva — anotar é metade do aprendizado.',
           tecnicas: [],
+          voltas: 1,
+          pausaFinal: false,
+          etapas: [
+            et('Assistir lutas de 60 kg', 420, 0, 'pegada, entradas, ne-waza'),
+            et('Anotar 2 ideias', 180, 0, 'no caderno ou no celular'),
+          ],
         },
       ],
     },

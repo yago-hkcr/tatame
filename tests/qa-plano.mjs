@@ -156,37 +156,53 @@ const abriuTerca = await ev(`(() => {
   return true;
 })()`);
 await sleep(700);
-await click('[data-action="pl-next"]'); // pula a preparação e começa o aquecimento
-await sleep(450);
-const tagsAq = await ev(`(() => [...document.querySelectorAll('#pl-tecs .tag')].map(e => e.textContent))()`);
-await click('[data-action="pl-next"]'); // vai para o bloco de força
+await click('[data-action="pl-next"]'); // pula a preparação
 await sleep(500);
-const tags = await ev(`(() => [...document.querySelectorAll('#pl-tecs .tag')].map(e => e.textContent))()`);
-check('aquecimento aponta o tai-sabaki', (tagsAq || []).includes('Tai-sabaki (deslocamento)'), (tagsAq || []).join(' | '));
+const aq = await ev(`(() => ({
+  tempo: (document.querySelector('#pl-time') || {}).textContent,
+  nome: (document.querySelector('#pl-block') || {}).textContent,
+  state: (document.querySelector('#pl-state') || {}).textContent,
+}))()`);
 check(
-  'primeira etapa do bloco de força no timer',
-  abriuTerca && tags.includes('Puxada de kuzushi no elástico'),
-  (tags || []).join(' | ')
+  'aquecimento começa pelo primeiro exercício',
+  /Polichinelo/.test(aq.nome || '') && aq.tempo === '00:30' && /etapa 1 de 11/.test(aq.state || ''),
+  JSON.stringify(aq)
 );
 
-/* cada exercício com o seu tempo: 5 etapas × 3 voltas no bloco de força */
+/* as etapas do aquecimento andam uma por exercício */
+const nomes = [];
+for (let k = 0; k < 8; k++) {
+  await click('[data-action="pl-next"]');
+  await sleep(220);
+  nomes.push(await texto('#pl-block'));
+}
+check(
+  'aquecimento etapa por etapa',
+  nomes.some((n) => /Skipping/i.test(n || '')) && nomes.some((n) => /Tai-sabaki/i.test(n || '')),
+  nomes.slice(0, 4).join(' → ')
+);
+
+/* bloco de força: 5 exercícios × 3 voltas */
+await click('[data-action="pl-jump"][data-i="1"]');
+await sleep(500);
 const etapa1 = await ev(`(() => ({
   tempo: (document.querySelector('#pl-time') || {}).textContent,
   state: (document.querySelector('#pl-state') || {}).textContent,
   nome: (document.querySelector('#pl-block') || {}).textContent,
+  tags: [...document.querySelectorAll('#pl-tecs .tag')].map(e => e.textContent),
 }))()`);
-check('etapa 1 de 10 mostra 00:40', etapa1.tempo === '00:40', etapa1.tempo);
+check('primeira etapa do bloco de força no timer', (etapa1.tags || []).includes('Puxada de kuzushi no elástico'), (etapa1.tags || []).join(' | '));
+check('etapa mostra o próprio tempo', etapa1.tempo === '00:40', etapa1.tempo);
 check('cabeçalho diz etapa e volta', /etapa 1 de 5/.test(etapa1.state || '') && /volta 1\/3/.test(etapa1.state || ''), etapa1.state);
 await click('[data-action="pl-next"]');
-await sleep(350);
+await sleep(400);
 const etapa2 = await ev(`(() => ({
   tempo: (document.querySelector('#pl-time') || {}).textContent,
   nome: (document.querySelector('#pl-block') || {}).textContent,
-  badge: (document.querySelector('#pl-badge') || {}).textContent,
 }))()`);
 check('depois vem o descanso da etapa', /Descanso/.test(etapa2.nome || '') && etapa2.tempo === '00:40', (etapa2.nome || '') + ' ' + etapa2.tempo);
 await click('[data-action="pl-next"]');
-await sleep(350);
+await sleep(400);
 const etapa3 = await ev(`(() => ({
   tempo: (document.querySelector('#pl-time') || {}).textContent,
   nome: (document.querySelector('#pl-block') || {}).textContent,
@@ -204,7 +220,7 @@ await sleep(350);
 
 /* atualização: plano aplicado na versão antiga (sem etapas) */
 const marcas = await ev(`(() => ({ plano: window.Tatame.db.planos, etapas: window.Tatame.db.treinos.filter(t => /Terça/.test(t.nome)).map(t => t.blocos.filter(b => (b.etapas||[]).length).length) }))()`);
-check('plano marcado como aplicado', !!marcas.plano['dupla-60kg'] && marcas.plano['dupla-60kg'].versao === 2, JSON.stringify(marcas.plano));
+check('plano marcado como aplicado', !!marcas.plano['dupla-60kg'] && marcas.plano['dupla-60kg'].versao === 3, JSON.stringify(marcas.plano));
 check('treino de terça com etapas nos blocos', marcas.etapas[0] >= 3, String(marcas.etapas[0]));
 
 /* simula o perfil que aplicou a versão 1: treinos iguais, sem etapas e sem marca */
@@ -244,9 +260,34 @@ const atualizado = await ev(`(() => {
   };
 })()`);
 check('atualização não duplica treinos', atualizado.treinos === 7 && atualizado.antigo, JSON.stringify(atualizado));
-check('atualização traz as etapas', atualizado.etapas === 9, String(atualizado.etapas));
+check('atualização traz as etapas', atualizado.etapas === 27, String(atualizado.etapas));
 check('treino atualizado continua com 45 min', atualizado.minutos === 45, String(atualizado.minutos));
-check('plano marcado na versão 2', atualizado.versao === 2, JSON.stringify(atualizado));
+check('plano marcado na versão 3', atualizado.versao === 3, JSON.stringify(atualizado));
+
+/* cada exercício com o seu tempo: só descanso/análise ficam como bloco único */
+const separados = await ev(`(() => {
+  const plano = window.PLANOS ? null : null;
+  const d = window.Tatame.db;
+  const terca = d.treinos.find(t => /Terça/.test(t.nome));
+  const segunda = d.treinos.find(t => /Segunda/.test(t.nome));
+  const domingo = d.treinos.find(t => /Domingo/.test(t.nome));
+  const conta = (t) => t.blocos.reduce((a, b) => a + (b.etapas || []).length, 0);
+  const aq = segunda.blocos[0];
+  return {
+    aquecimento: (aq.etapas || []).length,
+    aquecimentoNomos: (aq.etapas || []).map(e => e.nome).slice(0, 3),
+    terca: conta(terca), domingo: conta(domingo),
+    semEtapas: d.treinos.filter(t => t.nome !== 'Treino antigo do dojo')
+      .flatMap(t => t.blocos.filter(b => !(b.etapas || []).length).map(b => b.nome)),
+  };
+})()`);
+check('aquecimento separado em etapas', separados.aquecimento >= 10, JSON.stringify(separados.aquecimentoNomos));
+check('terça e domingo todos separados', separados.terca === 27 && separados.domingo === 14, JSON.stringify(separados));
+check(
+  'só descanso, golden score e análise ficam em bloco único',
+  separados.semEtapas.every((n) => ['Troca', 'Golden score', 'Análise'].includes(n)),
+  separados.semEtapas.join(', ')
+);
 
 /* idempotência */
 await ev(`document.querySelectorAll('.tab')[1].click(); true`);

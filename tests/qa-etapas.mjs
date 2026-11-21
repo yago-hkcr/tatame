@@ -244,8 +244,12 @@ check('o nome acompanha a etapa', !!meio && (meio.n !== antes.n || meio.si >= 2)
 check('chega na última etapa pelo relógio', !!fim && /Etapa final/.test(fim.n || '') && fim.si === 2, JSON.stringify(fim));
 
 /* ao acabar a última etapa o treino fecha sozinho */
-await sleep(5200);
-const encerrou = await ev(`(() => ({ player: !!window.Tatame.player, sheet: !!document.querySelector('#sheet:not([hidden])'), txt: (document.querySelector('#sheet .sheet-head h2')||{}).textContent || '' }))()`);
+let encerrou = { player: true, sheet: false, txt: '' };
+for (let i = 0; i < 40; i++) {
+  await sleep(400);
+  encerrou = await ev(`(() => ({ player: !!window.Tatame.player, sheet: !!document.querySelector('#sheet:not([hidden])'), txt: (document.querySelector('#sheet .sheet-head h2')||{}).textContent || '' }))()`);
+  if (!encerrou.player && encerrou.sheet) break;
+}
 check('termina o treino no fim das etapas', abriuAuto && !encerrou.player && encerrou.sheet, JSON.stringify(encerrou));
 await ev(`(() => { const b = document.querySelector('[data-action="descartar-sessao"]'); if (b) b.click(); return true; })()`);
 await sleep(400);

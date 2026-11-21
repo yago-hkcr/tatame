@@ -3,7 +3,7 @@
 App web (PWA) para montar e executar treinos de judô. Sem build, sem dependências, sem servidor:
 abre no navegador, salva no próprio aparelho e funciona offline.
 
-**No ar:** https://tatame-beta.vercel.app · **Código:** https://github.com/yago-hkcr/tatame
+**No ar:** https://yago-hkcr.github.io/tatame/ · **Código:** https://github.com/yago-hkcr/tatame
 
 No celular, abra o link e use "Adicionar à tela de início" — ele instala como app e funciona sem internet.
 
@@ -161,17 +161,30 @@ na primeira chave criada.
 
 ## Publicar
 
-O deploy é contínuo: `git push` na branch `master` → Vercel publica em
-https://tatame-beta.vercel.app (projeto `tatame`, estático, sem build).
+O deploy é contínuo: `git push` na branch `master` → **GitHub Pages** publica em
+https://yago-hkcr.github.io/tatame/ (repo público, branch `master`, raiz `/`, sem build).
+Tudo é relativo (`./`), então funciona em subpasta: o service worker fica com escopo em
+`/tatame/` e o manifest abre com `start_url: "./"`.
 
-Deploy manual, se precisar:
+Conferir o build:
 
 ```bash
-vercel --prod          # publica a pasta atual no projeto tatame
+gh api repos/yago-hkcr/tatame/pages/builds/latest --jq '.status,.commit'
 ```
 
-`vercel.json` cuida dos cabeçalhos: `sw.js` e `index.html` sem cache (para a atualização
-do app chegar), manifest com MIME correto e `nosniff`/`no-referrer` no resto.
+Também existe o projeto Vercel (`tatame`, https://tatame-beta.vercel.app), conectado ao mesmo
+repositório, com `vercel.json` cuidando dos cabeçalhos (`sw.js` e `index.html` sem cache, MIME do
+manifest, `nosniff`/`no-referrer`). Ele está **pausado pela própria Vercel**: a URL responde
+`402 Payment Required` / `DEPLOYMENT_DISABLED` enquanto a conta não for regularizada. Deploy manual,
+quando voltar:
+
+```bash
+vercel --prod
+```
+
+No GitHub Pages não dá para definir cabeçalhos: `sw.js` sai com `Cache-Control: max-age=600`,
+então uma atualização do service worker pode levar até 10 minutos para ser vista — por isso o
+`?v=` muda a cada versão.
 
 Ao mexer em CSS/JS, suba o `?v=` em `index.html` **e** em `sw.js` (lista `SHELL` e nome do
 cache) para furar o cache do service worker.

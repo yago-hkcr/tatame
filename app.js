@@ -83,7 +83,46 @@
     const x = new Date(d);
     return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate());
   };
-  const somaDur = (blocos) => (blocos || []).reduce((a, b) => a + (Number(b.dur) || 0), 0);
+  /* ------------------------------------------------------------------------
+     ETAPAS — cada exercício do bloco com o seu próprio tempo.
+     Bloco sem etapas continua sendo um bloco só (dur). Com etapas, a duração
+     do bloco passa a ser a soma delas (× voltas), contando o descanso entre
+     etapas e, se `pausaFinal` não for false, também o descanso do fim.
+     ------------------------------------------------------------------------ */
+  const durEtapa = (e) => Math.max(0, Number(e && e.dur) || 0);
+  const pausaEtapa = (e) => Math.max(0, Number(e && e.pausa) || 0);
+
+  function durBloco(b) {
+    if (!b) return 0;
+    const et = b.etapas || [];
+    if (!et.length) return Number(b.dur) || 0;
+    const voltas = Math.min(20, Math.max(1, Number(b.voltas) || 1));
+    const bloco = et.reduce((a, e) => a + durEtapa(e) + pausaEtapa(e), 0);
+    const semFinal = b.pausaFinal === false ? pausaEtapa(et[et.length - 1]) : 0;
+    return Math.max(0, bloco * voltas - semFinal);
+  }
+
+  /* sequência que o cronômetro percorre: trabalho → descanso → trabalho… */
+  function montaSeq(b) {
+    const et = b.etapas || [];
+    if (!et.length) return [{ kind: 'work', etapa: null, volta: 1, voltas: 1, dur: Number(b.dur) || 0, i: 0, total: 1 }];
+    const voltas = Math.min(20, Math.max(1, Number(b.voltas) || 1));
+    const seq = [];
+    const totalWork = et.length;
+    for (let v = 0; v < voltas; v++) {
+      et.forEach((e, i) => {
+        seq.push({ kind: 'work', etapa: e, volta: v + 1, voltas, ei: i, work: i + 1, totalWork, dur: durEtapa(e) });
+        const ultima = v === voltas - 1 && i === et.length - 1;
+        const pausa = ultima && b.pausaFinal === false ? 0 : pausaEtapa(e);
+        if (pausa > 0) seq.push({ kind: 'rest', etapa: e, volta: v + 1, voltas, ei: i, work: i + 1, totalWork, dur: pausa });
+      });
+    }
+    seq.forEach((x, i) => (x.i = i));
+    seq.forEach((x) => (x.total = seq.length));
+    return seq;
+  }
+
+  const somaDur = (blocos) => (blocos || []).reduce((a, b) => a + durBloco(b), 0);
 
   function toast(msg) {
     const el = $('#toast');
@@ -134,6 +173,7 @@
   function cueTick(sec) { beep(600 + (3 - sec) * 110, 0.06, 0.17); }
   function cuePrepStart() { beep(440, 0.09, 0.14); }
   function cueBlockStart() { beep(660, 0.1, 0.22); beep(990, 0.14, 0.2, 0.11); }
+  function cueRest() { beep(392, 0.16, 0.2); beep(294, 0.2, 0.18, 0.12); }
   function cueBlockEnd() { beep(784, 0.12, 0.24); beep(1046, 0.18, 0.22, 0.12); }
   function cueFinish() { beep(880, 0.12, 0.24); beep(1174, 0.12, 0.22, 0.14); beep(1568, 0.26, 0.22, 0.28); }
   function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
@@ -1066,7 +1106,7 @@
   function sheetShell(title, body, foot, opts) {
     opts = opts || {};
     return `
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="sheet ${opts.wide ? 'sheet-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
         <div class="sheet-grip"></div>
         <div class="sheet-head">
           ${opts.back ? '<button class="close-btn" data-action="voltar-editor" aria-label="Voltar">←</button>' : ''}
@@ -1244,7 +1284,7 @@
   /* ------------------------------------------------------------- editor */
   function novoBloco(over) {
     return Object.assign(
-      { id: uid(), nome: 'Novo bloco', tipo: 'tecnica', modo: 'tempo', dur: 600, reps: '', foco: '', tecnicas: [] },
+      { id: uid(), nome: 'Novo bloco', tipo: 'tecnica', modo: 'tempo', dur: 600, reps: '', foco: '', tecnicas: [], etapas: [], voltas: 1 },
       over || {}
     );
   }
@@ -1326,21 +1366,25 @@
           : `<button class="btn ghost" data-action="fechar-sheet">Cancelar</button>`
       }
       <button class="btn primary" data-action="salvar-treino">Salvar treino</button>
-      `
+      `,
+      { wide: true }
     );
   }
 
   function blocoHtml(b, i) {
     const tp = TIPO[b.tipo] || TIPO.outro;
-    const min = Math.floor((Number(b.dur) || 0) / 60);
-    const sec = (Number(b.dur) || 0) % 60;
+    const etapas = b.etapas || [];
+    const dur = durBloco(b);
+    const min = Math.floor(dur / 60);
+    const sec = dur % 60;
+    const voltas = Math.min(20, Math.max(1, Number(b.voltas) || 1));
     return `
       <details class="blk" data-i="${i}" ${i === 0 ? 'open' : ''}>
         <summary>
           <span class="idx">${i + 1}</span>
           <span class="dot" style="background:${tp.cor}"></span>
           <span class="name">${esc(b.nome || 'Bloco')}</span>
-          <span class="dur">${b.modo === 'manual' ? 'livre' : mmss(b.dur || 0)}</span>
+          <span class="dur">${b.modo === 'manual' ? 'livre' : mmss(durBloco(b))}</span>
         </summary>
         <div class="blk-body">
           <div class="grid2">
@@ -1366,16 +1410,22 @@
             <div>
               <span class="lbl">Duração</span>
               <div class="dur-inputs">
-                <input type="number" min="0" max="180" step="1" data-field="min" value="${min}" ${b.modo === 'manual' ? 'disabled' : ''} aria-label="Minutos">
+                <input type="number" min="0" max="180" step="1" data-field="min" value="${min}" ${b.modo === 'manual' || etapas.length ? 'disabled' : ''} aria-label="Minutos">
                 <span>min</span>
-                <input type="number" min="0" max="59" step="5" data-field="sec" value="${sec}" ${b.modo === 'manual' ? 'disabled' : ''} aria-label="Segundos">
+                <input type="number" min="0" max="59" step="5" data-field="sec" value="${sec}" ${b.modo === 'manual' || etapas.length ? 'disabled' : ''} aria-label="Segundos">
                 <span>s</span>
               </div>
             </div>
           </div>
-          ${b.modo === 'manual' ? '' : `<div class="dur-quick">
+          ${
+            b.modo === 'manual'
+              ? ''
+              : etapas.length
+              ? `<p class="et-note">${ICON.clock} Duração calculada pelas etapas: <b>${mmss(durBloco(b))}</b></p>`
+              : `<div class="dur-quick">
             ${DUR_QUICK.map((x) => `<button class="dq ${Number(b.dur) === x ? 'on' : ''}" data-action="blk-dur" data-i="${i}" data-sec="${x}">${x < 60 ? x + 's' : x / 60 + 'm'}</button>`).join('')}
-          </div>`}
+          </div>`
+          }
           <div>
             <span class="lbl">Repetições / séries (opcional)</span>
             <input type="text" data-field="reps" value="${esc(b.reps || '')}" placeholder="Ex.: 3x10, 5 séries de 20, 2 min cada lado">
@@ -1395,6 +1445,50 @@
                 })
                 .join('')}
               <button class="chip-add" data-action="abrir-picker" data-i="${i}">+ adicionar</button>
+            </div>
+          </div>
+
+          <div class="etapas-box" data-i="${i}">
+            <div class="row-between et-head">
+              <span class="lbl">Etapas · cada uma com seu tempo</span>
+              ${
+                etapas.length
+                  ? `<span class="et-voltas">
+                       <button class="icon-btn" data-action="et-voltas" data-i="${i}" data-v="${voltas - 1}" aria-label="Menos voltas">−</button>
+                       <b>${voltas}×</b>
+                       <button class="icon-btn" data-action="et-voltas" data-i="${i}" data-v="${voltas + 1}" aria-label="Mais voltas">+</button>
+                     </span>`
+                  : ''
+              }
+            </div>
+            ${
+              etapas.length
+                ? `<div class="etapas">
+                    ${etapas
+                      .map(
+                        (e, k) => `
+                      <div class="etapa" data-i="${i}" data-ei="${k}">
+                        <span class="et-n">${k + 1}</span>
+                        <input class="et-nome" type="text" data-et="nome" value="${esc(e.nome || '')}" placeholder="Exercício" aria-label="Nome da etapa ${k + 1}">
+                        <div class="et-fields">
+                          <label class="et-f"><span>tempo s</span><input type="number" min="0" max="3600" step="5" data-et="dur" value="${Number(e.dur) || 0}" aria-label="Segundos de trabalho"></label>
+                          <label class="et-f"><span>pausa s</span><input type="number" min="0" max="600" step="5" data-et="pausa" value="${Number(e.pausa) || 0}" aria-label="Segundos de pausa"></label>
+                          <label class="et-f et-f-reps"><span>reps</span><input type="text" data-et="reps" value="${esc(e.reps || '')}" placeholder="3x10" aria-label="Repetições"></label>
+                        </div>
+                        <button class="icon-btn danger" data-action="del-etapa" data-i="${i}" data-ei="${k}" aria-label="Remover etapa">✕</button>
+                      </div>`
+                      )
+                      .join('')}
+                   </div>
+                   <label class="et-final">
+                     <input type="checkbox" class="switch" data-et="pausaFinal" ${b.pausaFinal === false ? '' : 'checked'}>
+                     <span>contar o descanso do fim do bloco</span>
+                   </label>`
+                : `<p class="et-note">Sem etapas: o bloco usa a duração única acima.</p>`
+            }
+            <div class="et-actions">
+              <button class="btn ghost xs" data-action="add-etapa" data-i="${i}">+ etapa</button>
+              ${(b.tecnicas || []).length ? `<button class="btn ghost xs" data-action="etapas-do-bloco" data-i="${i}">usar as técnicas do bloco (${(b.tecnicas || []).length})</button>` : ''}
             </div>
           </div>
           <div class="row-between blk-foot">
@@ -1492,6 +1586,8 @@
       finished: false,
       startedAt: Date.now(),
       feitas: new Set(),
+      seq: [],
+      si: 0,
     };
     P.remain = P.prep;
     ensureAudio();
@@ -1521,6 +1617,26 @@
     if (!P) return;
     const b = P.blocos[P.i];
     const tp = TIPO[b.tipo] || TIPO.outro;
+    const cur = P.seq[P.si] || { kind: 'work', etapa: null, dur: Number(b.dur) || 0, i: 0, total: 1, volta: 1, voltas: 1 };
+    const etapa = cur.etapa;
+    const emPausa = cur.kind === 'rest';
+    const comEtapas = (b.etapas || []).length > 0;
+    const titulo = emPausa ? 'Descanso' : etapa ? etapa.nome : b.nome;
+    const repsInline = emPausa ? '' : etapa ? etapa.reps || '' : b.reps || '';
+    const foco = emPausa
+      ? 'Respire, ajuste o material e prepare a próxima etapa.'
+      : etapa
+      ? etapa.foco || b.foco || ''
+      : b.foco || '';
+    const tags = emPausa
+      ? etapa && etapa.tec
+        ? [etapa.tec]
+        : []
+      : etapa
+      ? etapa.tec
+        ? [etapa.tec]
+        : etapa.tecnicas || []
+      : b.tecnicas || [];
     const total = somaDur(P.blocos);
     const R = 53;
     const C = 2 * Math.PI * R;
@@ -1562,17 +1678,28 @@
             <circle class="ring-dot" id="pl-dot" cx="${60 + R}" cy="60" r="3.2"/>
           </svg>
           <div class="ring-inner">
-            <span class="badge-tipo" id="pl-badge">${prep ? 'preparação' : esc(tp.nome)}</span>
+            <span class="badge-tipo" id="pl-badge">${prep ? 'preparação' : emPausa ? 'descanso' : esc(tp.nome)}</span>
             <div class="pl-time" id="pl-time">00:00</div>
-            <div class="pl-block-name" id="pl-block">${esc(prep ? 'Prepare-se' : b.nome)}${
-              !prep && b.reps ? `<span class="reps-inline">${esc(b.reps)}</span>` : ''
+            <div class="pl-block-name" id="pl-block">${esc(prep ? 'Prepare-se' : titulo)}${
+              !prep && repsInline ? `<span class="reps-inline">${esc(repsInline)}</span>` : ''
             }</div>
-            <div class="pl-state" id="pl-state">${prep ? 'começando' : b.modo === 'manual' ? 'livre' : 'tempo'}</div>
+            <div class="pl-state" id="pl-state">${
+              prep
+                ? 'começando'
+                : b.modo === 'manual'
+                ? 'livre'
+                : comEtapas
+                ? (emPausa ? '' : 'etapa ' + cur.work + ' de ' + cur.totalWork + (cur.voltas > 1 ? ' · ' : '')) +
+                  (cur.voltas > 1 ? 'volta ' + cur.volta + '/' + cur.voltas : '')
+                : emPausa
+                ? 'descanso'
+                : 'tempo'
+            }</div>
           </div>
         </div>
-        <p class="pl-foco" id="pl-foco">${esc(prep ? 'Respire. O primeiro bloco começa em instantes.' : b.foco || '')}</p>
+        <p class="pl-foco" id="pl-foco">${esc(prep ? 'Respire. O primeiro bloco começa em instantes.' : foco)}</p>
         <div class="pl-tecs" id="pl-tecs">
-          ${(prep ? [] : b.tecnicas || [])
+          ${(prep ? [] : tags)
             .map((id) => tecById(id))
             .filter(Boolean)
             .map((t) => `<span class="tag tec">${esc(t.nome)}</span>`)
@@ -1597,7 +1724,13 @@
             return `<button class="pl-row ${done ? 'done' : ''} ${on ? 'on' : ''}" data-action="pl-jump" data-i="${idx}">
               <span class="n">${idx + 1}</span>
               <span class="rn">${esc(x.nome)}</span>
-              ${done ? '<span class="check">✓</span>' : `<span class="rd">${x.modo === 'manual' ? 'livre' : mmss(x.dur || 0)}</span>`}
+              ${
+                done
+                  ? '<span class="check">✓</span>'
+                  : on && (x.etapas || []).length
+                  ? `<span class="rd"><i class="et-pill">${P.seq[P.si] && P.seq[P.si].kind === 'rest' ? 'pausa' : (P.seq[P.si] ? P.seq[P.si].work : 1) + '/' + x.etapas.length}</i>${mmss(durBloco(x))}</span>`
+                  : `<span class="rd">${x.modo === 'manual' ? 'livre' : mmss(durBloco(x))}</span>`
+              }
               <span class="sq" style="--c:${t.cor}"></span>
             </button>`;
           })
@@ -1617,10 +1750,14 @@
 
   function upNextText() {
     if (!P) return '';
+    const prox = P.seq[P.si + 1];
+    if (prox) {
+      const nome = prox.kind === 'rest' ? 'Descanso' : prox.etapa ? prox.etapa.nome : P.blocos[P.i].nome;
+      return `A seguir · <b>${esc(nome)}</b> · ${mmss(prox.dur || 0)}`;
+    }
     const next = P.blocos[P.i + 1];
     if (!next) return 'Último bloco';
-    const t = TIPO[next.tipo] || TIPO.outro;
-    return `A seguir · <b>${esc(next.nome)}</b> · ${next.modo === 'manual' ? 'livre' : mmss(next.dur || 0)}`;
+    return `A seguir · <b>${esc(next.nome)}</b> · ${next.modo === 'manual' ? 'livre' : mmss(durBloco(next))}`;
   }
 
   function updatePlayer() {
@@ -1638,8 +1775,9 @@
       secs = Math.floor(P.elapsed / 1000);
       frac = 1;
     } else {
+      const atual = P.seq[P.si] || { dur: b.dur };
       secs = Math.ceil(P.remain / 1000);
-      frac = b.dur ? Math.max(0, Math.min(1, P.remain / (b.dur * 1000))) : 0;
+      frac = atual.dur ? Math.max(0, Math.min(1, P.remain / (atual.dur * 1000))) : 0;
     }
 
     const label = mmss(secs);
@@ -1649,8 +1787,10 @@
       void timeEl.offsetWidth;
       timeEl.classList.add('tick');
     }
+    const atual = P.seq[P.si] || {};
     const warn = P.phase === 'run' && b.modo !== 'manual' && P.remain <= 3000 && P.remain > 0;
     timeEl.classList.toggle('warn', warn);
+    timeEl.classList.toggle('rest', atual.kind === 'rest');
 
     const R = 53;
     const C = 2 * Math.PI * R;
@@ -1659,10 +1799,19 @@
     const dot = $('#pl-dot');
     if (dot) dot.setAttribute('transform', `rotate(${(360 * frac).toFixed(1)} 60 60)`);
 
-    const cur = ($('#pl-timeline') || {}).children ? $('#pl-timeline').children[P.i] : null;
-    if (cur) {
-      const fill = cur.querySelector('i');
-      if (fill) fill.style.width = (b.modo === 'manual' ? 100 : (1 - frac) * 100).toFixed(1) + '%';
+    const segEl = ($('#pl-timeline') || {}).children ? $('#pl-timeline').children[P.i] : null;
+    if (segEl) {
+      const fill = segEl.querySelector('i');
+      if (fill) {
+        let pct = 100;
+        if (b.modo !== 'manual') {
+          const totalBloco = durBloco(b);
+          const anterior = P.seq.slice(0, P.si).reduce((a, x) => a + (Number(x.dur) || 0), 0);
+          const feito = anterior + Math.max(0, (atual.dur || 0) - P.remain / 1000);
+          pct = totalBloco ? (feito / totalBloco) * 100 : 0;
+        }
+        fill.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%';
+      }
     }
   }
 
@@ -1701,8 +1850,7 @@
         }
         if (P.remain <= 0) {
           P.remain = 0;
-          updatePlayer();
-          completeBlock();
+          avancaSeq();
           return;
         }
       }
@@ -1716,7 +1864,9 @@
     P.phase = 'run';
     P.lastCue = -1;
     const b = P.blocos[i];
-    P.remain = (Number(b.dur) || 0) * 1000;
+    P.seq = montaSeq(b);
+    P.si = 0;
+    P.remain = (P.seq[0].dur || 0) * 1000;
     P.elapsed = 0;
     P.feitas.delete(i);
     cueBlockStart();
@@ -1724,6 +1874,27 @@
     renderPlayer();
     flashBlock();
     P.last = performance.now();
+  }
+
+  /* próxima etapa do bloco; se era a última, fecha o bloco */
+  function avancaSeq() {
+    if (!P) return;
+    if (P.si < P.seq.length - 1) {
+      P.si += 1;
+      P.lastCue = -1;
+      P.remain = (P.seq[P.si].dur || 0) * 1000;
+      if (P.seq[P.si].kind === 'rest') {
+        cueRest();
+        buzz(30);
+      } else {
+        cueBlockStart();
+        buzz(35);
+      }
+      renderPlayer();
+      P.last = performance.now();
+      return;
+    }
+    completeBlock();
   }
 
   function completeBlock() {
@@ -1748,6 +1919,14 @@
   function prevBlock() {
     if (!P) return;
     if (P.phase === 'prep') return;
+    if (P.si > 0) {
+      P.si -= 1;
+      P.lastCue = -1;
+      P.remain = (P.seq[P.si].dur || 0) * 1000;
+      renderPlayer();
+      P.last = performance.now();
+      return;
+    }
     if (P.i === 0) {
       beginBlock(0);
       return;
@@ -1909,6 +2088,57 @@
       openSheet({ type: 'editor' });
     },
 
+    'add-etapa'(el) {
+      const i = Number(el.dataset.i);
+      const b = draft && draft.blocos[i];
+      if (!b) return;
+      b.etapas = b.etapas || [];
+      b.etapas.push({ id: uid(), nome: '', dur: 40, pausa: 20, reps: '', tec: '' });
+      if (b.pausaFinal == null) b.pausaFinal = true;
+      renderSheet();
+      const box = $$('#block-list .blk')[i];
+      if (box) box.open = true;
+    },
+
+    'del-etapa'(el) {
+      const i = Number(el.dataset.i);
+      const k = Number(el.dataset.ei);
+      const b = draft && draft.blocos[i];
+      if (!b || !b.etapas) return;
+      b.etapas.splice(k, 1);
+      renderSheet();
+      const box = $$('#block-list .blk')[i];
+      if (box) box.open = true;
+    },
+
+    'et-voltas'(el) {
+      const i = Number(el.dataset.i);
+      const b = draft && draft.blocos[i];
+      if (!b) return;
+      b.voltas = Math.min(20, Math.max(1, Number(el.dataset.v) || 1));
+      renderSheet();
+      const box = $$('#block-list .blk')[i];
+      if (box) box.open = true;
+    },
+
+    /* transforma as técnicas escolhidas em etapas (tempo padrão de 40 s) */
+    'etapas-do-bloco'(el) {
+      const i = Number(el.dataset.i);
+      const b = draft && draft.blocos[i];
+      if (!b) return;
+      const ids = (b.tecnicas || []).slice();
+      if (!ids.length) return;
+      b.etapas = ids.map((id) => {
+        const t = tecById(id);
+        return { id: uid(), nome: t ? t.nome : 'Etapa', dur: 40, pausa: 20, reps: '', tec: id };
+      });
+      b.voltas = Math.max(1, Number(b.voltas) || 1);
+      if (b.pausaFinal == null) b.pausaFinal = false;
+      renderSheet();
+      const box = $$('#block-list .blk')[i];
+      if (box) box.open = true;
+    },
+
     'add-bloco'() {
       draft.blocos.push(novoBloco({ nome: 'Bloco ' + (draft.blocos.length + 1), tipo: 'tecnica', dur: 600 }));
       renderSheet();
@@ -2017,16 +2247,30 @@
         descricao: t.descricao || '',
         cor: ACENTOS.some((a) => a.cor === t.cor) ? t.cor : '',
         prep: t.prep == null ? db.config.prep : t.prep,
-        blocos: (t.blocos || []).map((b) => ({
-          id: uid(),
-          nome: b.nome || 'Bloco',
-          tipo: TIPO[b.tipo] ? b.tipo : 'outro',
-          modo: b.modo === 'manual' ? 'manual' : 'tempo',
-          dur: Math.max(0, Number(b.dur) || 0),
-          reps: b.reps || '',
-          foco: b.foco || '',
-          tecnicas: (b.tecnicas || []).slice(),
-        })),
+        blocos: (t.blocos || []).map((b) => {
+          const etapas = (b.etapas || []).map((e) => ({
+            id: uid(),
+            nome: e.nome || 'Etapa',
+            dur: Math.max(0, Number(e.dur) || 0),
+            pausa: Math.max(0, Number(e.pausa) || 0),
+            reps: e.reps || '',
+            tec: e.tec || '',
+          }));
+          const novo = {
+            id: uid(),
+            nome: b.nome || 'Bloco',
+            tipo: TIPO[b.tipo] ? b.tipo : 'outro',
+            modo: b.modo === 'manual' ? 'manual' : 'tempo',
+            dur: Math.max(0, Number(b.dur) || 0),
+            reps: b.reps || '',
+            foco: b.foco || '',
+            tecnicas: (b.tecnicas || []).slice(),
+            voltas: Math.min(20, Math.max(1, Number(b.voltas) || 1)),
+            pausaFinal: b.pausaFinal !== false,
+          };
+          if (etapas.length) novo.etapas = etapas;
+          return novo;
+        }),
       }));
       db.treinos = novos.concat(db.treinos);
       saveDb();
@@ -2135,16 +2379,36 @@
       if (!draft.blocos.length) return toast('Adicione pelo menos um bloco');
       draft.prep = Math.max(0, Math.min(60, Number(draft.prep) || 0));
       draft.cor = ACENTOS.some((a) => a.cor === draft.cor) ? draft.cor : '';
-      draft.blocos = draft.blocos.map((b) => ({
-        id: b.id || uid(),
-        nome: (b.nome || '').trim() || 'Bloco',
-        tipo: TIPO[b.tipo] ? b.tipo : 'outro',
-        modo: b.modo === 'manual' ? 'manual' : 'tempo',
-        dur: Math.max(0, Number(b.dur) || 0),
-        reps: (b.reps || '').trim().slice(0, 24),
-        foco: (b.foco || '').trim(),
-        tecnicas: Array.isArray(b.tecnicas) ? b.tecnicas : [],
-      }));
+      draft.blocos = draft.blocos.map((b) => {
+        const etapas = (b.etapas || [])
+          .filter((e) => e && (String(e.nome || '').trim() || Number(e.dur) > 0))
+          .map((e) => ({
+            id: e.id || uid(),
+            nome: String(e.nome || '').trim().slice(0, 48) || 'Etapa',
+            dur: Math.max(0, Math.min(3600, Number(e.dur) || 0)),
+            pausa: Math.max(0, Math.min(600, Number(e.pausa) || 0)),
+            reps: String(e.reps || '').trim().slice(0, 24),
+            tec: e.tec || '',
+          }));
+        const limpo = {
+          id: b.id || uid(),
+          nome: (b.nome || '').trim() || 'Bloco',
+          tipo: TIPO[b.tipo] ? b.tipo : 'outro',
+          modo: b.modo === 'manual' ? 'manual' : 'tempo',
+          reps: (b.reps || '').trim().slice(0, 24),
+          foco: (b.foco || '').trim(),
+          tecnicas: Array.isArray(b.tecnicas) ? b.tecnicas : [],
+          voltas: Math.min(20, Math.max(1, Number(b.voltas) || 1)),
+          pausaFinal: b.pausaFinal !== false,
+        };
+        if (etapas.length) {
+          limpo.etapas = etapas;
+          limpo.dur = durBloco(Object.assign({}, limpo, { etapas, voltas: limpo.voltas, pausaFinal: limpo.pausaFinal }));
+        } else {
+          limpo.dur = Math.max(0, Number(b.dur) || 0);
+        }
+        return limpo;
+      });
       const idx = db.treinos.findIndex((t) => t.id === draft.id);
       if (idx >= 0) db.treinos[idx] = draft;
       else db.treinos.unshift(draft);
@@ -2378,7 +2642,7 @@
         beginBlock(0);
         return;
       }
-      completeBlock();
+      avancaSeq();
     },
     'pl-prev'() {
       prevBlock();
@@ -2565,6 +2829,40 @@
       db.tecnicas[id] = db.tecnicas[id] || { s: 'novo', n: '' };
       db.tecnicas[id].n = el.value;
       saveDb();
+      return;
+    }
+
+    // etapas do bloco (nome, tempo, pausa, reps, descanso final)
+    if (el.dataset && el.dataset.et) {
+      const campo = el.dataset.et;
+      const caixa = el.closest('.etapas-box');
+      const linha = el.closest('.etapa');
+      const i = Number(caixa ? caixa.dataset.i : linha && linha.dataset.i);
+      const b = draft && draft.blocos && draft.blocos[i];
+      if (!b) return;
+      if (campo === 'pausaFinal') {
+        b.pausaFinal = !!el.checked;
+      } else {
+        if (!linha || !b.etapas) return;
+        const e = b.etapas[Number(linha.dataset.ei)];
+        if (!e) return;
+        if (campo === 'nome') e.nome = el.value;
+        else if (campo === 'reps') e.reps = el.value;
+        else if (campo === 'dur') e.dur = Math.max(0, Math.min(3600, Number(el.value) || 0));
+        else if (campo === 'pausa') e.pausa = Math.max(0, Math.min(600, Number(el.value) || 0));
+      }
+      // mantém os totais do editor em dia sem re-renderizar (não perde o foco)
+      const box = el.closest('.blk');
+      if (box) {
+        const lbl = box.querySelector('summary .dur');
+        if (lbl) lbl.textContent = b.modo === 'manual' ? 'livre' : mmss(durBloco(b));
+        const calc = box.querySelector('.et-note b');
+        if (calc) calc.textContent = mmss(durBloco(b));
+      }
+      const tot = $('.editor-total b');
+      if (tot) tot.textContent = durText(somaDur(draft.blocos));
+      const hint = $('.editor-flabel .hint');
+      if (hint) hint.textContent = draft.blocos.length + ' · ' + durText(somaDur(draft.blocos));
       return;
     }
 

@@ -164,9 +164,38 @@ await sleep(500);
 const tags = await ev(`(() => [...document.querySelectorAll('#pl-tecs .tag')].map(e => e.textContent))()`);
 check('aquecimento aponta o tai-sabaki', (tagsAq || []).includes('Tai-sabaki (deslocamento)'), (tagsAq || []).join(' | '));
 check(
-  'timer mostra os exercícios do plano',
-  abriuTerca && tags.includes('Barra fixa com judogi') && tags.includes('Remada curvada 2 halteres'),
+  'primeira etapa do bloco de força no timer',
+  abriuTerca && tags.includes('Puxada de kuzushi no elástico'),
   (tags || []).join(' | ')
+);
+
+/* cada exercício com o seu tempo: 5 etapas × 3 voltas no bloco de força */
+const etapa1 = await ev(`(() => ({
+  tempo: (document.querySelector('#pl-time') || {}).textContent,
+  state: (document.querySelector('#pl-state') || {}).textContent,
+  nome: (document.querySelector('#pl-block') || {}).textContent,
+}))()`);
+check('etapa 1 de 10 mostra 00:40', etapa1.tempo === '00:40', etapa1.tempo);
+check('cabeçalho diz etapa e volta', /etapa 1 de 5/.test(etapa1.state || '') && /volta 1\/3/.test(etapa1.state || ''), etapa1.state);
+await click('[data-action="pl-next"]');
+await sleep(350);
+const etapa2 = await ev(`(() => ({
+  tempo: (document.querySelector('#pl-time') || {}).textContent,
+  nome: (document.querySelector('#pl-block') || {}).textContent,
+  badge: (document.querySelector('#pl-badge') || {}).textContent,
+}))()`);
+check('depois vem o descanso da etapa', /Descanso/.test(etapa2.nome || '') && etapa2.tempo === '00:40', (etapa2.nome || '') + ' ' + etapa2.tempo);
+await click('[data-action="pl-next"]');
+await sleep(350);
+const etapa3 = await ev(`(() => ({
+  tempo: (document.querySelector('#pl-time') || {}).textContent,
+  nome: (document.querySelector('#pl-block') || {}).textContent,
+  tags: [...document.querySelectorAll('#pl-tecs .tag')].map(e => e.textContent),
+}))()`);
+check(
+  'etapa 3 é a barra fixa, com o seu próprio tempo',
+  /Barra fixa/.test(etapa3.nome || '') && etapa3.tempo === '00:40' && (etapa3.tags || []).includes('Barra fixa com judogi'),
+  (etapa3.nome || '') + ' ' + etapa3.tempo + ' ' + (etapa3.tags || []).join(' | ')
 );
 await click('[data-action="pl-close"]');
 await sleep(350);

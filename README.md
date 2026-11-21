@@ -27,12 +27,13 @@ No celular, use o mesmo Wi-Fi e acesse `http://SEU-IP:5178`. No Chrome/Safari es
 - **Chave de acesso** — cada pessoa tem uma chave (`TATAME-XXXX-XXXX`). Ela abre o seu tatame no aparelho: treinos, histórico e técnicas separados dos de outra pessoa. Dá para criar quantas quiser no mesmo celular.
 - **Treinar** — seus treinos, modelos prontos e inícios rápidos (uchikomi, randori, ne-waza, físico, treino livre).
 - **Montar treino** — nome, descrição, **cor do treino**, **preparação inicial (0–30 s)** e blocos com tipo, duração (atalhos de 30 s a 20 min), modo livre, **repetições/séries**, foco e técnicas vinculadas. Dá para reordenar, duplicar, inserir **descanso de 30 s**, embaralhar a ordem e duplicar o treino inteiro.
+- **Etapas por bloco** — cada exercício do bloco com o **seu próprio tempo e a sua pausa** (`40 s` de trabalho + `40 s` de descanso, quantas voltas quiser). O timer chama a etapa seguinte sozinho, mostra `etapa 3 de 5 · volta 2/3` no anel, toca um bipe grave no descanso e monta a duração do bloco pela soma das etapas. Sem etapas, o bloco continua sendo um tempo único — os dois jeitos convivem no mesmo treino.
 - **Timer de tatame** — contagem de preparação com **bipes 3 · 2 · 1 antes de começar**, os mesmos bipes **nos últimos 3 segundos de cada bloco**, som de início/fim, vibração, pausa, pular/voltar bloco, tela sempre ligada durante o treino.
 - **Registro** — ao terminar, salva duração real, blocos concluídos, técnicas treinadas, sensação e anotação.
 - **Progresso** — sequência de dias, minutos totais, média por sessão, anel de meta, gráfico de 14 dias e histórico.
 - **Técnicas** — 77 técnicas (nage-waza, katame-waza e ukemi) com kanji e dica rápida; marque como "estudando"/"afinada" e escreva suas anotações.
 - **Exercícios personalizados** — crie os seus (flexão, agachamento, prancha, corda, o golpe que você está montando) com categoria (força, golpe, mobilidade, cardio, outro), dica de execução, nível e anotações. Eles aparecem no repertório, entram em qualquer bloco pelo seletor de técnicas e contam no treino como uma técnica — e dá para criar um direto de dentro do bloco, sem sair do editor.
-- **Planos prontos** — pacotes de treinos que entram na sua chave com um toque (*Treinos → Planos*). Hoje vem o **Judô em dupla · 60 kg**: 6 sessões de 45 min (segunda a domingo), 270 min por semana, com barra fixa e 2 halteres de 6 kg, e os 19 exercícios do plano já criados em *Meus exercícios*.
+- **Planos prontos** — pacotes de treinos que entram na sua chave com um toque (*Treinos → Planos*). Hoje vem o **Judô em dupla · 60 kg**: 6 sessões de 45 min (segunda a domingo), 270 min por semana, com barra fixa e 2 halteres de 6 kg, os 19 exercícios do plano já criados em *Meus exercícios* e **34 etapas cronometradas** (cada exercício com o seu tempo e a sua pausa).
 - **Backup** — exportar/importar tudo em JSON (o arquivo carrega a sua chave).
 
 ## Estrutura
@@ -51,6 +52,38 @@ tests/                auditoria responsiva automatizada (headless Chrome via CDP
 ```
 
 Tipografia e fontes são locais (`fonts/`) — nada de CDN em tempo de execução, o app abre offline.
+
+## Etapas (cada exercício com o seu tempo)
+
+Um bloco guarda opcionalmente `etapas` — a lista de exercícios daquele bloco:
+
+```js
+{
+  nome: 'Força · barra e halteres',
+  voltas: 3,
+  pausaFinal: true,               // conta o descanso do fim do bloco
+  etapas: [
+    { nome: 'Barra fixa com judogi', dur: 40, pausa: 40, reps: '3 a 6 reps', tec: 'cx-pl-barra-judogi' },
+    { nome: 'Remada curvada 2 halteres', dur: 40, pausa: 40, reps: '12 a 15 reps', tec: 'cx-pl-remada-halteres' }
+  ]
+}
+```
+
+A duração do bloco passa a ser calculada (`durBloco`), nunca digitada à mão:
+
+```
+voltas × Σ(dur + pausa)  −  (pausaFinal === false ? pausa da última etapa : 0)
+```
+
+O timer percorre a sequência de `montaSeq()` — trabalho → descanso → trabalho… — e `avancaSeq()`
+toca a etapa seguinte quando o tempo acaba (bipe de início subindo, bipe grave no descanso). O anel
+mostra o tempo **da etapa**, a barra do bloco acumula o progresso do bloco inteiro e o cabeçalho diz
+`etapa 3 de 5 · volta 2/3`. `pl-next` avança etapa, `pl-prev` volta etapa (só sai do bloco no começo
+dele). Sem `etapas`, tudo funciona como antes: um tempo único por bloco.
+
+No editor, cada etapa tem nome, tempo, pausa e reps; `+ etapa` cria uma, `usar as técnicas do bloco`
+transforma as técnicas escolhidas em etapas de 40 s (pausa 20 s) e `−/+` muda as voltas. A duração do
+bloco aparece somada no resumo, no card do treino e no total do treino.
 
 ## Layout adaptativo (`adaptive.css`)
 
@@ -103,6 +136,7 @@ Fluxos funcionais completos:
 ```bash
 node tests/qa-exercicios.mjs   # criar exercício → usar no treino → player → editar → excluir
 node tests/qa-plano.mjs        # abrir planos → aplicar → 6 treinos de 45 min, 19 exercícios, sem duplicar
+node tests/qa-etapas.mjs       # etapas: editor → duração calculada → timer etapa por etapa → avanço automático
 ```
 Salva um PNG por combinação em `tests/.out`, um JSON em `tests/last-report.json` e uma assinatura
 perceptual (grade 16×16 de luminância) em `tests/baseline/hashes.json` — assim a regressão visual

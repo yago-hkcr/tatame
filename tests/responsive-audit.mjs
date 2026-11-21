@@ -242,16 +242,36 @@ const SEED_FN = (data) => `(() => { localStorage.setItem('tatame.v1:' + ${JSON.s
 
 /* ------------------------------------------------------------ fixture */
 function fixture(chave) {
-  const bloco = (i) => ({
-    id: 'b' + i,
-    nome: ['Mobilidade e aquecimento completo', 'Ukemi (amortecimento)', 'Uchikomi de entrada', 'Nagekomi leve', 'Ne-waza · imobilizações', 'Randori em pé', 'Alongamento'][i % 7],
-    tipo: ['aquecimento', 'ukemi', 'uchikomi', 'nagekomi', 'newaza', 'randori', 'alongamento'][i % 7],
-    modo: 'tempo',
-    dur: 300 + i * 60,
-    reps: i % 3 === 0 ? '3x10 de cada lado' : '',
-    foco: i % 2 ? 'Entrada sem queda, kuzushi antes do encaixe do quadril.' : '',
-    tecnicas: i % 2 ? ['ippon-seoi-nage'] : [],
-  });
+  /* alguns blocos com etapas (cada exercício com o seu tempo), com nomes longos
+     de propósito: é o caso mais apertado do editor */
+  const etapas = (i) =>
+    i % 5 === 2
+      ? [
+          { id: 'e' + i + 'a', nome: 'Puxada de kuzushi no elástico (lado direito)', dur: 40, pausa: 40, reps: '3 a 6 reps', tec: 'cx-aud1' },
+          { id: 'e' + i + 'b', nome: 'Remada curvada com 2 halteres de 6 kg', dur: 40, pausa: 40, reps: '12 a 15 reps', tec: '' },
+          { id: 'e' + i + 'c', nome: 'Agachamento búlgaro na cadeira', dur: 40, pausa: 40, reps: '6 por perna', tec: '' },
+        ]
+      : null;
+  const bloco = (i) => {
+    const et = etapas(i);
+    const base = {
+      id: 'b' + i,
+      nome: ['Mobilidade e aquecimento completo', 'Ukemi (amortecimento)', 'Uchikomi de entrada', 'Nagekomi leve', 'Ne-waza · imobilizações', 'Randori em pé', 'Alongamento'][i % 7],
+      tipo: ['aquecimento', 'ukemi', 'uchikomi', 'nagekomi', 'newaza', 'randori', 'alongamento'][i % 7],
+      modo: 'tempo',
+      dur: et ? et.length * 80 * 3 : 300 + i * 60,
+      reps: i % 3 === 0 ? '3x10 de cada lado' : '',
+      foco: i % 2 ? 'Entrada sem queda, kuzushi antes do encaixe do quadril.' : '',
+      tecnicas: i % 2 ? ['ippon-seoi-nage'] : [],
+    };
+    if (et) {
+      base.etapas = et;
+      base.voltas = 3;
+      base.pausaFinal = true;
+      base.reps = '3 voltas · 40 s cada exercício';
+    }
+    return base;
+  };
   const now = Date.now();
   return {
     chave,

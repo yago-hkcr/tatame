@@ -202,6 +202,52 @@ await sleep(350);
 await click('[data-action="descartar-sessao"]');
 await sleep(350);
 
+/* atualização: plano aplicado na versão antiga (sem etapas) */
+const marcas = await ev(`(() => ({ plano: window.Tatame.db.planos, etapas: window.Tatame.db.treinos.filter(t => /Terça/.test(t.nome)).map(t => t.blocos.filter(b => (b.etapas||[]).length).length) }))()`);
+check('plano marcado como aplicado', !!marcas.plano['dupla-60kg'] && marcas.plano['dupla-60kg'].versao === 2, JSON.stringify(marcas.plano));
+check('treino de terça com etapas nos blocos', marcas.etapas[0] >= 3, String(marcas.etapas[0]));
+
+/* simula o perfil que aplicou a versão 1: treinos iguais, sem etapas e sem marca */
+await ev(`(() => {
+  const d = window.Tatame.db;
+  d.planos = {};
+  d.treinos.forEach(t => {
+    if (t.nome === 'Treino antigo do dojo') return;
+    t.blocos.forEach(b => { delete b.etapas; delete b.voltas; delete b.pausaFinal; });
+  });
+  localStorage.setItem('tatame.v1:' + d.perfil.chave, JSON.stringify(d));
+  return true;
+})()`);
+await send('Page.navigate', { url: URL + '?qapl=3' });
+await sleep(1500);
+await ev(`document.querySelectorAll('.tab')[1].click(); true`);
+await sleep(350);
+await click('[data-action="abrir-planos"]');
+await sleep(500);
+const aviso = await ev(`(() => ({
+  texto: (document.querySelector('.plan-ok')||{}).textContent || '',
+  forcar: !!document.querySelector('[data-action="add-plano"][data-force="1"]'),
+}))()`);
+check('plano antigo mostra o aviso de nova versão', /Nova versão/.test(aviso.texto) && aviso.forcar, JSON.stringify(aviso));
+await click('[data-action="add-plano"][data-force="1"]');
+await sleep(900);
+const atualizado = await ev(`(() => {
+  const d = window.Tatame.db;
+  const terca = d.treinos.find(t => /Terça/.test(t.nome));
+  return {
+    treinos: d.treinos.length,
+    antigo: d.treinos.some(t => t.nome === 'Treino antigo do dojo'),
+    etapas: terca.blocos.reduce((a, b) => a + (b.etapas || []).length, 0),
+    minutos: terca.blocos.reduce((a, b) => a + b.dur, 0) / 60,
+    versao: (d.planos['dupla-60kg'] || {}).versao,
+    sessoes: d.sessoes.length,
+  };
+})()`);
+check('atualização não duplica treinos', atualizado.treinos === 7 && atualizado.antigo, JSON.stringify(atualizado));
+check('atualização traz as etapas', atualizado.etapas === 9, String(atualizado.etapas));
+check('treino atualizado continua com 45 min', atualizado.minutos === 45, String(atualizado.minutos));
+check('plano marcado na versão 2', atualizado.versao === 2, JSON.stringify(atualizado));
+
 /* idempotência */
 await ev(`document.querySelectorAll('.tab')[1].click(); true`);
 await sleep(350);

@@ -353,6 +353,7 @@ const et = (nome, dur, pausa, reps, tec) => ({ nome, dur, pausa, reps: reps || '
 
 const PLANO_DUPLA_60 = {
   id: 'dupla-60kg',
+  versao: 2, // 2 = etapas cronometradas em cada bloco
   nome: 'Judô em dupla · 60 kg',
   subtitulo: 'Barra fixa e 2 halteres de 6 kg · 7:00 às 7:45',
   descricao:

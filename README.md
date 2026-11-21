@@ -33,7 +33,7 @@ No celular, use o mesmo Wi-Fi e acesse `http://SEU-IP:5178`. No Chrome/Safari es
 - **Progresso** — sequência de dias, minutos totais, média por sessão, anel de meta, gráfico de 14 dias e histórico.
 - **Técnicas** — 77 técnicas (nage-waza, katame-waza e ukemi) com kanji e dica rápida; marque como "estudando"/"afinada" e escreva suas anotações.
 - **Exercícios personalizados** — crie os seus (flexão, agachamento, prancha, corda, o golpe que você está montando) com categoria (força, golpe, mobilidade, cardio, outro), dica de execução, nível e anotações. Eles aparecem no repertório, entram em qualquer bloco pelo seletor de técnicas e contam no treino como uma técnica — e dá para criar um direto de dentro do bloco, sem sair do editor.
-- **Planos prontos** — pacotes de treinos que entram na sua chave com um toque (*Treinos → Planos*). Hoje vem o **Judô em dupla · 60 kg**: 6 sessões de 45 min (segunda a domingo), 270 min por semana, com barra fixa e 2 halteres de 6 kg, os 19 exercícios do plano já criados em *Meus exercícios* e **34 etapas cronometradas** (cada exercício com o seu tempo e a sua pausa).
+- **Planos prontos** — pacotes de treinos que entram na sua chave com um toque (*Treinos → Planos*). Cada plano tem versão: se você já aplicou uma versão anterior, o cartão mostra **Atualizar plano** e refaz só os treinos do plano no lugar (sem duplicar e sem perder o histórico). Hoje vem o **Judô em dupla · 60 kg**: 6 sessões de 45 min (segunda a domingo), 270 min por semana, com barra fixa e 2 halteres de 6 kg, os 19 exercícios do plano já criados em *Meus exercícios* e **34 etapas cronometradas** (cada exercício com o seu tempo e a sua pausa).
 - **Backup** — exportar/importar tudo em JSON (o arquivo carrega a sua chave).
 
 ## Estrutura

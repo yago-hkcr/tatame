@@ -191,6 +191,7 @@
     sessoes: [],
     tecnicas: {},
     exercicios: [],
+    planos: {},
     config: { prep: 10, som: true },
   };
 
@@ -255,6 +256,7 @@
         sessoes: Array.isArray(p.sessoes) ? p.sessoes : [],
         tecnicas: p.tecnicas && typeof p.tecnicas === 'object' ? p.tecnicas : {},
         exercicios: normalizaExercicios(p.exercicios),
+        planos: p.planos && typeof p.planos === 'object' && !Array.isArray(p.planos) ? p.planos : {},
         config: Object.assign({}, DEFAULT_DB.config, p.config || {}),
       };
     } catch (e) {
@@ -1180,10 +1182,21 @@
   }
 
   /* ------------------------------------------------------- planos sheet */
+  /* o plano já entrou neste perfil? e está na versão atual? */
+  function estadoPlano(p) {
+    db.planos = db.planos && typeof db.planos === 'object' ? db.planos : {};
+    const marca = db.planos[p.id];
+    const aplicado = p.treinos.every((t) => db.treinos.some((x) => x.nome === t.nome));
+    if (!aplicado) return { aplicado: false, versao: 0, antigo: false };
+    const versao = marca ? Number(marca.versao) || 0 : 0;
+    return { aplicado: true, versao, antigo: versao < (Number(p.versao) || 1) };
+  }
+
   function planosHtml() {
     const cards = PLANOS.map((p) => {
       const mins = p.treinos.reduce((a, t) => a + somaDur(t.blocos), 0);
-      const ativo = p.treinos.every((t) => db.treinos.some((x) => x.nome === t.nome));
+      const st = estadoPlano(p);
+      const ativo = st.aplicado;
       return `
       <div class="plan-card">
         <div class="plan-head">
@@ -1205,7 +1218,10 @@
             .join('')}
         </ol>
         ${
-          ativo
+          ativo && st.antigo
+            ? `<p class="plan-ok warn">${ICON.spark} Nova versão: cada exercício com o seu tempo e a sua pausa.</p>
+               <button class="btn primary block" data-action="add-plano" data-id="${p.id}" data-force="1">Atualizar plano</button>`
+            : ativo
             ? `<p class="plan-ok">${ICON.check} Já está no seu tatame.</p>`
             : `<button class="btn primary block" data-action="add-plano" data-id="${p.id}">${ICON.plus} Adicionar ao meu tatame</button>`
         }
@@ -2230,9 +2246,10 @@
     'add-plano'(el) {
       const p = PLANOS.find((x) => x.id === el.dataset.id);
       if (!p) return;
-      if (p.treinos.every((t) => db.treinos.some((x) => x.nome === t.nome))) {
-        return toast('Esse plano já está no seu tatame');
-      }
+      let forcar = el.dataset.force === '1';
+      const st = estadoPlano(p);
+      if (st.aplicado && !forcar) return toast('Esse plano já está no seu tatame');
+      if (st.aplicado && st.antigo) forcar = true;
       // exercícios: soma sem duplicar (id estável por plano)
       db.exercicios = Array.isArray(db.exercicios) ? db.exercicios : [];
       p.exercicios.forEach((e) => {
@@ -2272,12 +2289,31 @@
           return novo;
         }),
       }));
-      db.treinos = novos.concat(db.treinos);
+      if (forcar) {
+        // atualização: os treinos do plano são refeitos no lugar (o id e o
+        // histórico de sessões continuam os mesmos), o resto do perfil fica igual
+        const porNome = new Map(novos.map((t) => [t.nome, t]));
+        db.treinos = db.treinos.map((t) => {
+          const novo = porNome.get(t.nome);
+          if (!novo) return t;
+          porNome.delete(t.nome);
+          return Object.assign({}, novo, { id: t.id, prep: t.prep == null ? novo.prep : t.prep, cor: novo.cor || t.cor });
+        });
+        db.treinos = [...porNome.values()].concat(db.treinos);
+      } else {
+        db.treinos = novos.concat(db.treinos);
+      }
+      db.planos = db.planos || {};
+      db.planos[p.id] = { versao: Number(p.versao) || 1, quando: Date.now() };
       saveDb();
       closeSheet();
       ui.view = 'treinos';
       render();
-      toast(p.treinos.length + ' treinos e ' + p.exercicios.length + ' exercícios adicionados');
+      toast(
+        forcar
+          ? p.treinos.length + ' treinos atualizados com as etapas'
+          : p.treinos.length + ' treinos e ' + p.exercicios.length + ' exercícios adicionados'
+      );
     },
 
     /* ------------------------------------------- exercícios personalizados */

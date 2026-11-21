@@ -2220,3 +2220,7 @@ body.locked { overflow: hidden; }
   .sheet.sheet-wide .etapa { grid-template-columns: 22px minmax(0, 1.05fr) minmax(0, 1.35fr) 30px; gap: 10px; }
   .sheet.sheet-wide .etapa .et-fields { grid-template-columns: 84px 84px minmax(0, 1fr); }
 }
+
+/* aviso de plano com versão nova */
+.plan-ok.warn { color: var(--gold); }
+.plan-ok.warn + .btn { margin-top: 10px; }

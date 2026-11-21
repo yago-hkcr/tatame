@@ -194,7 +194,7 @@ check('card mostra a duração do bloco', /3 min/.test((await texto('.treino-car
 await click('.treino-card .play-btn');
 await sleep(800);
 const t1 = await ev(`(() => ({ t: (document.querySelector('#pl-time')||{}).textContent, n: (document.querySelector('#pl-block')||{}).textContent, s: (document.querySelector('#pl-state')||{}).textContent }))()`);
-check('timer abre na primeira etapa', t1.t === '00:40' && /Barra fixa/.test(t1.n || '') && /etapa 1 de 2/.test(t1.s || ''), JSON.stringify(t1));
+check('timer abre na primeira etapa', t1.t === '00:40' && /Barra fixa/.test(t1.n || '') && /etapa 1\/2/.test(t1.s || ''), JSON.stringify(t1));
 /* o relógio precisa andar de verdade (não só trocar de etapa) */
 await sleep(1300);
 const correndo = await ev(`(() => {
@@ -209,7 +209,7 @@ check('descanso com o tempo da etapa', t2.t === '00:10' && /Descanso/.test(t2.n 
 await click('[data-action="pl-next"]');
 await sleep(400);
 const t3 = await ev(`(() => ({ t: (document.querySelector('#pl-time')||{}).textContent, n: (document.querySelector('#pl-block')||{}).textContent, s: (document.querySelector('#pl-state')||{}).textContent }))()`);
-check('segunda etapa com o seu tempo', t3.t === '00:30' && /Remada/.test(t3.n || '') && /etapa 2 de 2/.test(t3.s || ''), JSON.stringify(t3));
+check('segunda etapa com o seu tempo', t3.t === '00:30' && /Remada/.test(t3.n || '') && /etapa 2\/2/.test(t3.s || ''), JSON.stringify(t3));
 await click('[data-action="pl-next"]');
 await sleep(400);
 await click('[data-action="pl-next"]');

@@ -1180,9 +1180,25 @@ select option { background: #12151c; color: var(--text); }
   gap: 14px;
   padding: 10px 20px 6px;
   min-height: 0;
+  /* nada do miolo pode pintar por cima do "a seguir" / controles */
+  overflow: hidden;
 }
 
-.ring-wrap { position: relative; width: min(76vw, 310px); aspect-ratio: 1; display: grid; place-items: center; }
+.ring-wrap {
+  position: relative;
+  /* o anel acompanha a altura disponível (janelas baixas) e nunca passa de 310px */
+  height: min(100%, 310px);
+  width: auto;
+  max-width: 76vw;
+  min-height: 156px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  flex: 0 1 auto;
+  /* o conteúdo do anel (tempo, nome, etapa) escala junto com ele */
+  container-type: size;
+  container-name: ring;
+}
 .ring-wrap svg.ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
 .ring-bg { fill: none; stroke: rgba(255, 255, 255, 0.07); stroke-width: 9; }
 .ring-fg {
@@ -1207,6 +1223,13 @@ select option { background: #12151c; color: var(--text); }
 }
 
 .ring-inner { position: relative; text-align: center; padding: 14%; width: 100%; }
+.ring-wrap .badge-tipo {
+  font-size: var(--fs-2xs);
+  max-width: 88%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .badge-tipo {
   display: inline-flex;
   align-items: center;
@@ -1230,7 +1253,7 @@ select option { background: #12151c; color: var(--text); }
 }
 .pl-time {
   font-family: var(--mono);
-  font-size: clamp(3.1rem, 17.5vw, 5rem);
+  font-size: clamp(1.7rem, 22cqw, 4.6rem);
   font-weight: 700;
   letter-spacing: -0.055em;
   line-height: 0.98;
@@ -1244,14 +1267,21 @@ select option { background: #12151c; color: var(--text); }
 .pl-time.warn { color: #ff9a8b; text-shadow: 0 0 46px rgba(255, 107, 87, 0.55); animation: warnPulse 0.9s ease-in-out infinite; }
 @keyframes warnPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
 
-.pl-block-name { font-size: 0.92rem; font-weight: 600; margin-top: 12px; padding: 0 6px; line-height: 1.25; letter-spacing: -0.02em; }
+.pl-block-name { font-size: clamp(0.78rem, 5.4cqw, 1.16rem); font-weight: 600; margin-top: 12px; padding: 0 6px; line-height: 1.25; letter-spacing: -0.02em; }
 .pl-state {
   font-family: var(--mono);
   font-size: var(--fs-2xs);
   color: var(--muted-2);
   margin-top: 7px;
-  letter-spacing: 0.2em;
+  /* "etapa 3/5 · volta 2/3" precisa caber dentro do anel: espaçamento menor
+     e uma linha só, sem estourar a borda em telas estreitas */
+  letter-spacing: 0.09em;
   text-transform: uppercase;
+  max-width: 100%;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
 }
 .player.paused .ring-fg { stroke: var(--muted-2); filter: none; }
 .player.paused .ring-dot { opacity: 0.25; }
@@ -1265,8 +1295,14 @@ select option { background: #12151c; color: var(--text); }
   max-width: 40ch;
   line-height: 1.55;
   min-height: 2.6em;
+  flex: none;
+  /* texto longo não empurra nem vaza: no máximo 3 linhas, com reticências */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.pl-tecs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 46ch; }
+.pl-tecs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 46ch; flex: none; }
 
 .pl-controls {
   position: relative;
@@ -2224,3 +2260,14 @@ body.locked { overflow: hidden; }
 /* aviso de plano com versão nova */
 .plan-ok.warn { color: var(--gold); }
 .plan-ok.warn + .btn { margin-top: 10px; }
+
+/* janelas baixas em retrato: a lista cede espaço para o anel e o texto de foco */
+@media (max-height: 700px) and (orientation: portrait) {
+  .pl-list { max-height: 17dvh; }
+}
+
+/* estado do anel: "etapa 2/5 · volta 1/3"; em anel pequeno só a etapa */
+.pl-state .st-volta::before { content: "·"; margin: 0 0.45em; opacity: 0.6; }
+@container ring (max-width: 250px) {
+  .pl-state .st-volta { display: none; }
+}

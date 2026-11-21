@@ -1644,6 +1644,14 @@
       : etapa
       ? etapa.foco || b.foco || ''
       : b.foco || '';
+    /* texto do estado: etapas em spans separados para o anel pequeno poder
+       esconder a volta em vez de cortar o texto */
+    const idxEtapa = emPausa ? '' : 'etapa ' + cur.work + '/' + cur.totalWork;
+    const txtVolta = cur.voltas > 1 ? 'volta ' + cur.volta + '/' + cur.voltas : '';
+    const estadoHtml = comEtapas
+      ? (idxEtapa ? `<span class="st-etapa">${idxEtapa}</span>` : '') +
+        (txtVolta ? `<span class="st-volta">${txtVolta}</span>` : '')
+      : esc(b.modo === 'manual' ? 'livre' : emPausa ? 'descanso' : 'tempo');
     const tags = emPausa
       ? etapa && etapa.tec
         ? [etapa.tec]
@@ -1699,18 +1707,7 @@
             <div class="pl-block-name" id="pl-block">${esc(prep ? 'Prepare-se' : titulo)}${
               !prep && repsInline ? `<span class="reps-inline">${esc(repsInline)}</span>` : ''
             }</div>
-            <div class="pl-state" id="pl-state">${
-              prep
-                ? 'começando'
-                : b.modo === 'manual'
-                ? 'livre'
-                : comEtapas
-                ? (emPausa ? '' : 'etapa ' + cur.work + ' de ' + cur.totalWork + (cur.voltas > 1 ? ' · ' : '')) +
-                  (cur.voltas > 1 ? 'volta ' + cur.volta + '/' + cur.voltas : '')
-                : emPausa
-                ? 'descanso'
-                : 'tempo'
-            }</div>
+            <div class="pl-state" id="pl-state">${prep ? 'começando' : estadoHtml}</div>
           </div>
         </div>
         <p class="pl-foco" id="pl-foco">${esc(prep ? 'Respire. O primeiro bloco começa em instantes.' : foco)}</p>

@@ -165,7 +165,7 @@ const aq = await ev(`(() => ({
 }))()`);
 check(
   'aquecimento começa pelo primeiro exercício',
-  /Polichinelo/.test(aq.nome || '') && aq.tempo === '00:30' && /etapa 1 de 11/.test(aq.state || ''),
+  /Polichinelo/.test(aq.nome || '') && aq.tempo === '00:30' && /etapa 1\/11/.test(aq.state || ''),
   JSON.stringify(aq)
 );
 
@@ -193,7 +193,7 @@ const etapa1 = await ev(`(() => ({
 }))()`);
 check('primeira etapa do bloco de força no timer', (etapa1.tags || []).includes('Puxada de kuzushi no elástico'), (etapa1.tags || []).join(' | '));
 check('etapa mostra o próprio tempo', etapa1.tempo === '00:40', etapa1.tempo);
-check('cabeçalho diz etapa e volta', /etapa 1 de 5/.test(etapa1.state || '') && /volta 1\/3/.test(etapa1.state || ''), etapa1.state);
+check('cabeçalho diz etapa e volta', /etapa 1\/5/.test(etapa1.state || '') && /volta 1\/3/.test(etapa1.state || ''), etapa1.state);
 await click('[data-action="pl-next"]');
 await sleep(400);
 const etapa2 = await ev(`(() => ({
@@ -220,7 +220,7 @@ await sleep(350);
 
 /* atualização: plano aplicado na versão antiga (sem etapas) */
 const marcas = await ev(`(() => ({ plano: window.Tatame.db.planos, etapas: window.Tatame.db.treinos.filter(t => /Terça/.test(t.nome)).map(t => t.blocos.filter(b => (b.etapas||[]).length).length) }))()`);
-check('plano marcado como aplicado', !!marcas.plano['dupla-60kg'] && marcas.plano['dupla-60kg'].versao === 3, JSON.stringify(marcas.plano));
+check('plano marcado como aplicado', !!marcas.plano['dupla-60kg'] && marcas.plano['dupla-60kg'].versao === 4, JSON.stringify(marcas.plano));
 check('treino de terça com etapas nos blocos', marcas.etapas[0] >= 3, String(marcas.etapas[0]));
 
 /* simula o perfil que aplicou a versão 1: treinos iguais, sem etapas e sem marca */
@@ -262,7 +262,7 @@ const atualizado = await ev(`(() => {
 check('atualização não duplica treinos', atualizado.treinos === 7 && atualizado.antigo, JSON.stringify(atualizado));
 check('atualização traz as etapas', atualizado.etapas === 27, String(atualizado.etapas));
 check('treino atualizado continua com 45 min', atualizado.minutos === 45, String(atualizado.minutos));
-check('plano marcado na versão 3', atualizado.versao === 3, JSON.stringify(atualizado));
+check('plano marcado na versão 4', atualizado.versao === 4, JSON.stringify(atualizado));
 
 /* cada exercício com o seu tempo: só descanso/análise ficam como bloco único */
 const separados = await ev(`(() => {

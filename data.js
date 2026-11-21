@@ -377,7 +377,7 @@ const VOLTA_CALMA_PADRAO = {
 
 const PLANO_DUPLA_60 = {
   id: 'dupla-60kg',
-  versao: 3, // 3 = todos os blocos separados por exercício (aquecimento, base, domingo)
+  versao: 4, // 4 = blocos separados por exercício + golpes nomeados
   nome: 'Judô em dupla · 60 kg',
   subtitulo: 'Barra fixa e 2 halteres de 6 kg · 7:00 às 7:45',
   descricao:
@@ -403,9 +403,9 @@ const PLANO_DUPLA_60 = {
           voltas: 4,
           pausaFinal: true,
           etapas: [
-            et('Golpe 1', 20, 40, '15 reps', 'ippon-seoi-nage'),
-            et('Golpe 2', 20, 40, '15 reps', 'kouchi-gari'),
-            et('Golpe 3', 20, 40, '15 reps'),
+            et('Golpe 1 · ippon seoi nage', 20, 40, '15 reps', 'ippon-seoi-nage'),
+            et('Golpe 2 · ko-uchi gari', 20, 40, '15 reps', 'kouchi-gari'),
+            et('Golpe 3 · o goshi', 20, 40, '15 reps', 'o-goshi'),
           ],
         },
         {

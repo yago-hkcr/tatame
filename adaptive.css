@@ -134,8 +134,8 @@ input, select, textarea, button {
 .hist-body h4 { font-size: var(--fs-sm); }
 .hist-body p { font-size: var(--fs-2xs); }
 .pl-name strong { font-size: clamp(0.86rem, 0.82rem + 0.3vw, 1rem); }
-.pl-block-name { font-size: clamp(0.95rem, 0.88rem + 0.45vw, 1.18rem); }
-.pl-time { font-size: var(--fs-time); }
+.pl-block-name { font-size: clamp(0.78rem, 5.4cqw, 1.18rem); }
+.pl-time { font-size: clamp(1.7rem, 22cqw, 4.6rem); }
 .pl-state, .pl-upnext { font-size: var(--fs-2xs); }
 .pl-foco { font-size: var(--fs-sm); }
 .tiny { font-size: var(--fs-xs); }
@@ -398,8 +398,10 @@ input, select, textarea, button {
     padding: var(--sp-2) var(--sp-3) calc(var(--sp-2) + var(--safe-b));
     align-content: start;
   }
-  .ring-wrap { width: min(48vh, 232px); }
-  .pl-time { font-size: clamp(1.9rem, 7.6vh, 3.1rem); }
+  .ring-wrap { height: min(48vh, 232px); width: auto; max-width: 46vw; }
+  /* paisagem baixa: o foco já está limitado a 2 linhas abaixo */
+  .pl-center { gap: var(--sp-1); }
+  .pl-time { font-size: clamp(1.5rem, 7.6vh, 3.1rem); }
   .pl-badge, .badge-tipo { max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pl-block-name { font-size: 0.9rem; line-height: 1.15; }
   .pl-state { font-size: var(--fs-2xs); }
